@@ -1,36 +1,14 @@
 { config, pkgs, environment, ... }:
 {
-    # programs.zsh = {
-    #     enable = true;
-    #     enableCompletion = true;
-    #     autosuggestions.enable = true;
-    #     syntaxHighlighting.enable = true;
-
-    #     ohMyZsh = {
-    #         enable = true;
-    #         plugins = [ "git" "docker" "kubectl" "sudo" ];
-    #         theme = "robbyrussell";
-    #     };
-
-    #     shellAliases = {
-    #         gtnix = "cd /etc/nixos";
-    #         rebuild-desktop = "sudo nixos-rebuild switch -I nixos-config=./hosts/desktop.nix";
-    #         ll = "ls -la";
-    #         docs= "cd ~/Documents";
-    #         work= "cd ~/Documents/work";
-    #         home= "cd ~";
-    #     };
-    # };
-
     programs.fish = {
       enable = true;
       shellAliases = {
-        gtnix = "cd /etc/nixos";
-        rebuild-desktop = "sudo nixos-rebuild switch -I nixos-config=./hosts/desktop.nix";
+        gtnix = "cd /etc/nixos && code .";
+        rebuild-desktop = "sudo nixos-rebuild switch -I nixos-config=/etc/nixos/hosts/desktop.nix";
         ll = "ls -la";
         docs= "cd ~/Documents";
-        work= "cd ~/Documents/work && . .folderSelect.sh";
-        self= "cd ~/Documents/self && . .folderSelect.sh";
+        work= "cd ~/Documents/work && . .folderSelect.sh && code .";
+        self= "cd ~/Documents/self && . .folderSelect.sh && code .";
         home= "cd ~";
       };
     };
