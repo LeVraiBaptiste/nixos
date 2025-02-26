@@ -5,6 +5,7 @@
     git
     vscode
     docker
+    nodejs_22
     go
   ];
 
