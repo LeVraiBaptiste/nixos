@@ -7,6 +7,9 @@
     docker
     nodejs_22
     go
+    mongodb-compass
+    # nodePackages."@anthropic-ai/claude-code"
+    gnumake
   ];
 
   # If you're using home-manager, you can use this configuration instead:
