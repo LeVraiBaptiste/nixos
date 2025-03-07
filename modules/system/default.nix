@@ -3,7 +3,6 @@
 {
     imports = [
         ./boot.nix
-        ./nvidia.nix
         ./network.nix
     ];
 

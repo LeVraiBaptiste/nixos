@@ -9,6 +9,7 @@
   [
     ./hardware-configuration.nix
     ../modules/system
+    ../modules/system/nvidia.nix
     ../modules/home
     ../modules/dev
     ../modules/brave.nix
@@ -16,15 +17,13 @@
     ../modules/system/virt/docker.nix
   ];
 
-   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-    # Enable the X11 windowing system.
-    services.xserver.enable = true;
+  # Enable the X11 windowing system.
+  services.xserver.enable = true;
 
-    # Enable the GNOME Desktop Environment.
-    services.xserver.displayManager.gdm.enable = true;
-    services.xserver.desktopManager.gnome.enable = true;
-
-
+  # Enable the GNOME Desktop Environment.
+  services.xserver.displayManager.gdm.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
 
 }
