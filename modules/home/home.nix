@@ -22,6 +22,13 @@ in
       enableZshIntegration = true;
     };
 
+    nixpkgs = {
+      config = {
+        allowUnfree = true;
+        allowUnfreePredicate = (_: true);
+      };
+    };
+
     programs.kitty = {
       enable = true;
       keybindings = lib.mkDefault {

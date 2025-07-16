@@ -28,6 +28,8 @@
       ripgrep
       bat
       fd
+      doctl
+      kubectl
     ];
 
     # Make zsh the default shell for your user

@@ -7,6 +7,7 @@
     docker
     nodejs_22
     go
+    python3
     mongodb-compass
     # nodePackages."@anthropic-ai/claude-code"
     gnumake
