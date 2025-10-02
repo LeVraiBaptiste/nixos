@@ -3,6 +3,7 @@
   # Add git to system packages
   environment.systemPackages = with pkgs; [
     git
+    gcc
     vscode
     docker
     nodejs_22
@@ -11,6 +12,8 @@
     mongodb-compass
     # nodePackages."@anthropic-ai/claude-code"
     gnumake
+    claude-code
+    kubernetes-helm
   ];
 
   # If you're using home-manager, you can use this configuration instead:

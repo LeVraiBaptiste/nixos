@@ -27,6 +27,12 @@
     #media-session.enable = true;
   };
 
+  # Enable Hyprland
+  #programs.hyprland = {
+   # enable = true;
+   # xwayland.enable = true;
+ # };
+
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
@@ -34,7 +40,7 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
     #  thunderbird
     ];
