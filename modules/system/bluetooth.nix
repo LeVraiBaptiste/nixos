@@ -2,8 +2,10 @@
 {
   services.blueman.enable = true;
 
-  hardware.bluetooth.enable = true;
-  hardware.bluetooth.powerOnBoot = true;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
   hardware.bluetooth.settings = { General = { Experimental = true; }; };
   hardware.bluetooth.settings.Input = {
     ClassicBondedOnly = false;

@@ -67,9 +67,13 @@ in
     # You might also want to set a default global git config
     programs.git = {
       enable = true;
-      userName = "LeVraiBaptiste";
-      userEmail = "jane@example.com";
-      
+      settings = {
+        user = {
+          name = "LeVraiBaptiste";
+          email = "jane@example.com";
+        };
+      };
+
       includes = [
         {
           condition = "gitdir:~/Documents/work/";
