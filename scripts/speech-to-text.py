@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 # Configuration
-WHISPER_MODEL = "base"
+WHISPER_MODEL = "medium"
 AUDIO_FILE = "/tmp/speech_recording.wav"
 RECORDING_PID_FILE = "/tmp/speech_recording.pid"
 DEBUG_LOG = "/tmp/speech_debug.log"
@@ -229,6 +229,7 @@ def transcribe_audio():
             "whisper-cli",
             "-m", model_path,
             "-f", AUDIO_FILE,
+            "-l", "auto",  # Auto-detect language (supports French, English, etc.)
             "--output-txt"
         ]
         debug_log(f"Running whisper-cli command: {' '.join(cmd)}")

@@ -1,5 +1,8 @@
 { pkgs, ... }:
 let
+  # Whisper with NVIDIA CUDA acceleration
+  whisperCuda = pkgs.whisper-cpp.override { cudaSupport = true; };
+
   # Create scripts with proper permissions
   dictateScript = pkgs.writeShellScriptBin "dictate" (builtins.readFile ../scripts/dictate.sh);
   setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (builtins.readFile ../scripts/setup-whisper-models.sh);
@@ -10,7 +13,7 @@ let
 in
 {
   environment.systemPackages = with pkgs; [
-    whisper-cpp
+    whisperCuda
     xdotool
     xclip
     libnotify
