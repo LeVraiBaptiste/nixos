@@ -1,5 +1,5 @@
 
-{ config, pkgs, environment, ... }:
+{ config, pkgs, ... }:
 {
     imports = [
         # ./hyprland.nix

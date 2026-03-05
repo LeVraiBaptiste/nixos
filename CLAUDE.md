@@ -1,7 +1,7 @@
 # NixOS Configuration Guide
 
 ## System Commands
-- `sudo nixos-rebuild switch -I nixos-config=/etc/nixos/hosts/desktop.nix` - Rebuild and apply system configuration
+- `sudo nixos-rebuild switch --flake /etc/nixos#desktop` - Rebuild and apply system configuration
 - `cd /etc/nixos && code .` - Open NixOS config in VS Code
 
 ## Code Style Guidelines

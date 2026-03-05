@@ -1,15 +1,8 @@
 { config, pkgs, lib, ... }:
 let
-  home-manager = builtins.fetchTarball {
-    url = "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz";
-  };
-  # myScript = pkgs.writeShellScriptBin "folderSelect" (builtins.readFile ../../scripts/folderSelect.sh);
   myScript = builtins.readFile ../../scripts/folderSelect.sh;
 in
 {
-  imports = [
-    <home-manager/nixos>
-  ];
 
   home-manager.users.bat = { pkgs, ... }: {
     # home.packages = [ pkgs.atool pkgs.httpie myScript ];

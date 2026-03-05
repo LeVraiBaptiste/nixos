@@ -1,4 +1,4 @@
-{ config, pkgs,  ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 {
   # Add git to system packages
   environment.systemPackages = with pkgs; [
@@ -7,12 +7,18 @@
     vscode
     docker
     nodejs_22
+
     go
+
+
+    ffmpeg
+
+    bun
+    pnpm
     python3
     mongodb-compass
-    # nodePackages."@anthropic-ai/claude-code"
     gnumake
-    claude-code
+    pkgs-unstable.claude-code
     kubernetes-helm
   ];
 
