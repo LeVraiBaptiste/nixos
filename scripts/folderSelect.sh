@@ -13,6 +13,7 @@ if test $dir_count -eq 1
 else
     # Display the directories
     echo "Directories in the current directory:"
+    echo "0. (stay in current folder)"
     for i in (seq $dir_count)
         echo "$i. $dirs[$i]"
     end
@@ -22,7 +23,9 @@ else
     read choice
 
     # Change to the chosen directory
-    if test $choice -le $dir_count -a $choice -gt 0
+    if test $choice -eq 0
+        echo "Staying in current folder"
+    else if test $choice -le $dir_count -a $choice -gt 0
         cd $dirs[$choice]
         echo "Changed directory to $dirs[$choice]"
     else
