@@ -68,6 +68,7 @@ if [[ -f "$MODEL_PATH" ]]; then
 
     echo ""
     echo "You can now use speech-to-text with the $MODEL model."
+    echo "To use this model, restart the service: sudo systemctl restart whisper-server"
 else
     echo "✗ Download failed!"
     exit 1

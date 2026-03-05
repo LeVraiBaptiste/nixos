@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
-import subprocess
+import json
 import os
-import sys
 import signal
+import subprocess
+import sys
 import time
+import uuid
 from datetime import datetime
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 # Configuration
-WHISPER_MODEL = "medium"
+WHISPER_SERVER_URL = "http://127.0.0.1:8080/inference"
 AUDIO_FILE = "/tmp/speech_recording.wav"
 RECORDING_PID_FILE = "/tmp/speech_recording.pid"
 DEBUG_LOG = "/tmp/speech_debug.log"
@@ -214,76 +218,67 @@ def stop_recording():
         return False
 
 def transcribe_audio():
-    """Transcribe audio using whisper-cpp"""
-    debug_log("Starting audio transcription...")
-    model_path = f"/etc/nixos/models/ggml-{WHISPER_MODEL}.bin"
-    debug_log(f"Model path: {model_path}")
-
-    if not os.path.exists(model_path):
-        debug_log(f"ERROR: Model file does not exist: {model_path}")
-        show_notification(f"Whisper model not found: {model_path}", "critical")
-        return None
+    """Transcribe audio via whisper-server HTTP API"""
+    debug_log("Starting audio transcription via whisper-server...")
+    debug_log(f"Server URL: {WHISPER_SERVER_URL}")
 
     try:
-        cmd = [
-            "whisper-cli",
-            "-m", model_path,
-            "-f", AUDIO_FILE,
-            "-l", "auto",  # Auto-detect language (supports French, English, etc.)
-            "--output-txt"
-        ]
-        debug_log(f"Running whisper-cli command: {' '.join(cmd)}")
+        boundary = uuid.uuid4().hex
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        debug_log(f"whisper-cli exit code: {result.returncode}")
-        debug_log(f"whisper-cli stdout: {result.stdout}")
-        debug_log(f"whisper-cli stderr: {result.stderr}")
+        with open(AUDIO_FILE, "rb") as f:
+            audio_data = f.read()
 
-        # Extract text from stdout (it's between timestamps)
-        stdout_text = ""
-        if result.stdout:
-            # Parse stdout to extract transcribed text
-            lines = result.stdout.strip().split('\n')
-            for line in lines:
-                if '-->' in line and ']' in line:
-                    # Extract text after the timestamp
-                    parts = line.split(']', 1)
-                    if len(parts) > 1:
-                        stdout_text += parts[1].strip() + " "
-            stdout_text = stdout_text.strip()
-            debug_log(f"Extracted text from stdout: '{stdout_text}'")
+        filename = os.path.basename(AUDIO_FILE)
 
-        # Also try reading generated text file (whisper-cli outputs filename.wav.txt)
-        txt_file = AUDIO_FILE + ".txt"
-        debug_log(f"Looking for output file: {txt_file}")
+        # Build multipart/form-data body
+        parts = []
+        parts.append(
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+            f"Content-Type: audio/wav\r\n\r\n"
+        )
+        parts.append(audio_data)
+        parts.append(b"\r\n")
+        parts.append(
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="response_format"\r\n\r\n'
+            f"json\r\n"
+        )
+        parts.append(
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="temperature"\r\n\r\n'
+            f"0.0\r\n"
+        )
+        parts.append(f"--{boundary}--\r\n")
 
-        file_text = ""
-        if os.path.exists(txt_file):
-            debug_log("Output file found, reading content...")
-            with open(txt_file, 'r') as f:
-                file_text = f.read().strip()
-            debug_log(f"Read text from file: '{file_text}'")
-            os.remove(txt_file)
-            debug_log("Removed temporary text file")
+        body = b""
+        for part in parts:
+            if isinstance(part, str):
+                body += part.encode("utf-8")
+            else:
+                body += part
 
-        # Return the longer of the two texts (or stdout if file is empty)
-        if len(stdout_text) > len(file_text):
-            return stdout_text
-        elif file_text:
-            return file_text
-        else:
-            debug_log("No text found in stdout or file")
-            return ""
+        req = Request(
+            WHISPER_SERVER_URL,
+            data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            method="POST",
+        )
 
-    except subprocess.CalledProcessError as e:
-        debug_log(f"whisper-cli failed: returncode={e.returncode}")
-        debug_log(f"whisper-cli stdout: {e.stdout}")
-        debug_log(f"whisper-cli stderr: {e.stderr}")
-        show_notification(f"Transcription failed: {e}", "critical")
+        debug_log("Sending request to whisper-server...")
+        response = urlopen(req, timeout=30)
+        result = json.loads(response.read().decode("utf-8"))
+        text = result.get("text", "").strip()
+        debug_log(f"Server response text: '{text}'")
+        return text
+
+    except (ConnectionRefusedError, URLError) as e:
+        debug_log(f"Whisper server not reachable: {e}")
+        show_notification("Whisper server not running", "critical")
         return None
     except Exception as e:
         debug_log(f"Exception in transcribe_audio: {e}")
-        show_notification(f"Error: {e}", "critical")
+        show_notification(f"Transcription error: {e}", "critical")
         return None
 
 def inject_text(text):
@@ -363,7 +358,7 @@ def main():
 
     # Check basic environment
     debug_log("Checking environment...")
-    for cmd in ["parec", "notify-send", "whisper-cli", "xdotool", "xclip"]:
+    for cmd in ["parec", "notify-send", "xdotool", "xclip"]:
         try:
             if cmd == "parec":
                 result = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
