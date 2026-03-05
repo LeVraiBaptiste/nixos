@@ -3,6 +3,8 @@
 {
   environment.systemPackages = with pkgs; [
     gnomeExtensions.gtile
+    gnomeExtensions.draw-on-gnome
+    gnomeExtensions.vitals
     dconf
   ];
 
