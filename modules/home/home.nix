@@ -24,14 +24,15 @@ in
 
     programs.kitty = {
       enable = true;
+      theme = "Vague";
       keybindings = lib.mkDefault {
         # "ctrl+f>2" = "set_font_size 20";
       };
-      font = {
+      # font = {
         # package = pkgs.noto-fonts;
-        name = "Noto Sans Mono";
+        # name = "Noto Sans Mono";
         # size = 11;
-      };
+      # };
       settings = lib.mkDefault {
         # enable_audio_bell = false;
         update_check_interval = 0;
