@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, environment, ... }:
+{ config, pkgs, ... }:
 
 {
   imports =
@@ -12,6 +12,7 @@
     ../modules/home
     ../modules/dev
     ../modules/brave.nix
+    ../modules/steam.nix
     ../modules/system/virt/docker.nix
   ];
 

@@ -1,24 +1,25 @@
-{ config, pkgs, pkgs-unstable, ... }:
+{ pkgs, pkgs-unstable, ... }:
 {
-  # Add git to system packages
   environment.systemPackages = with pkgs; [
-    git
+    # Languages & runtimes
     gcc
-    vscode
-    docker
     nodejs_22
-
+    python3
     go
-
-
-    ffmpeg
-
     bun
     pnpm
-    python3
-    mongodb-compass
+
+    # Build tools
     gnumake
-    pkgs-unstable.claude-code
+
+    # Dev tools
+    jq
+    ffmpeg
     kubernetes-helm
+    mongodb-compass
+
+    # Editors
+    vscode
+    pkgs-unstable.claude-code
   ];
 }

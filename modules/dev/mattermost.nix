@@ -1,8 +1,6 @@
-{ config, pkgs, ... }:
-
+{ pkgs, ... }:
 {
-    environment.systemPackages = with pkgs; [
-        mattermost-desktop
-    ];
-
+  environment.systemPackages = with pkgs; [
+    mattermost-desktop
+  ];
 }

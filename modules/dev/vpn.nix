@@ -1,6 +1,5 @@
-{ config, pkgs,  ... }:
+{ pkgs, ... }:
 {
-  # Add git to system packages
   environment.systemPackages = with pkgs; [
     openvpn
   ];

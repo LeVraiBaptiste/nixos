@@ -5,15 +5,11 @@
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
+    package = pkgs.bluez;
+    settings = {
+      General = { Experimental = true; };
+      Input = { ClassicBondedOnly = false; };
+    };
+    disabledPlugins = [ "sap" ];
   };
-  hardware.bluetooth.settings = { General = { Experimental = true; }; };
-  hardware.bluetooth.settings.Input = {
-    ClassicBondedOnly = false;
-  };
-  hardware.bluetooth.disabledPlugins = [ "sap" ];
-  hardware.bluetooth.package = pkgs.bluez;
-
-  environment.systemPackages = with pkgs; [
-    bluez
-  ];
 }

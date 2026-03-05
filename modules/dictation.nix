@@ -27,7 +27,6 @@ in
     xdotool
     xclip
     libnotify
-    python3
     pulseaudio
     curl
     dictateScript
