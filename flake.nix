@@ -36,5 +36,18 @@
           }
         ];
       };
+
+      nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = sharedSpecialArgs;
+        modules = [
+          ./hosts/laptop.nix
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useUserPackages = true;
+            home-manager.useGlobalPkgs = true;
+          }
+        ];
+      };
     };
 }

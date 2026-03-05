@@ -4,7 +4,8 @@
       enable = true;
       shellAliases = {
         gtnix = "cd /etc/nixos && code .";
-        rebuild-desktop = "sudo nixos-rebuild switch -I nixos-config=/etc/nixos/hosts/desktop.nix";
+        rebuild-desktop = "sudo nixos-rebuild switch --flake /etc/nixos#desktop";
+        rebuild-laptop = "sudo nixos-rebuild switch --flake /etc/nixos#laptop";
         ll = "ls -la";
         docs= "cd ~/Documents";
         work= "cd ~/Documents/work && . .folderSelect.sh && code .";
