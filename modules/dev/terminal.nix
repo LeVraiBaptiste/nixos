@@ -9,8 +9,8 @@
       rebuild-server = "sudo nixos-rebuild switch --flake ~/Documents/self/homelab#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password";
       ll = "ls -la";
       docs = "cd ~/Documents";
-      work = "cd ~/Documents/work && . .folderSelect.sh && code .";
-      self = "cd ~/Documents/self && . .folderSelect.sh && code .";
+      work = "cd ~/Documents/work && . .folderSelect.sh";
+      self = "cd ~/Documents/self && . .folderSelect.sh";
       home = "cd ~";
     };
   };

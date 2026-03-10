@@ -6,29 +6,39 @@ set dirs (ls -d */)
 # Check the number of directories
 set dir_count (count $dirs)
 
-if test $dir_count -eq 1
-    # If only one directory is present, change to it directly
+if test $dir_count -gt 1
+    # Use fzf for interactive folder selection
+    set choice (printf "%s\n" "(stay in current folder)" $dirs | fzf --height=~50% --reverse --prompt="Select folder: ")
+
+    if test -z "$choice"
+        echo "No selection made"
+        return
+    else if test "$choice" != "(stay in current folder)"
+        cd $choice
+        echo "Changed directory to $choice"
+    end
+else if test $dir_count -eq 1
     cd $dirs[1]
     echo "Changed directory to $dirs[1]"
-else
-    # Display the directories
-    echo "Directories in the current directory:"
-    echo "0. (stay in current folder)"
-    for i in (seq $dir_count)
-        echo "$i. $dirs[$i]"
-    end
+end
 
-    # Prompt the user to choose a directory
-    echo -n "Enter the number of the directory you want to go to: "
-    read choice
+# Action selection
+set action (printf "%s\n" \
+    "Open in VS Code" \
+    "Open in terminal" \
+    "Open in file manager" \
+    "Git status" \
+    | fzf --height=~50% --reverse --prompt="Action: ")
 
-    # Change to the chosen directory
-    if test $choice -eq 0
-        echo "Staying in current folder"
-    else if test $choice -le $dir_count -a $choice -gt 0
-        cd $dirs[$choice]
-        echo "Changed directory to $dirs[$choice]"
-    else
-        echo "Invalid choice"
-    end
+switch "$action"
+    case "Open in VS Code"
+        code .
+    case "Open in terminal"
+        echo "Ready in (pwd)"
+    case "Open in file manager"
+        xdg-open .
+    case "Git status"
+        git -c color.status=always status
+    case "*"
+        echo "No action selected"
 end
