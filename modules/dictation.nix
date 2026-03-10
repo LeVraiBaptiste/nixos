@@ -24,8 +24,7 @@ in
 {
   environment.systemPackages = with pkgs; [
     whisperCuda
-    xdotool
-    xclip
+    wl-clipboard  # Wayland-native clipboard (wl-copy/wl-paste)
     libnotify
     pulseaudio
     curl
@@ -35,6 +34,9 @@ in
     whisperClientScript
     whisperModelScript
   ];
+
+  # ydotool for Wayland-native key simulation (replaces xdotool)
+  programs.ydotool.enable = true;
 
   # Persistent whisper-server for fast transcription
   systemd.services.whisper-server = {

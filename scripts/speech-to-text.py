@@ -35,7 +35,8 @@ def show_notification(message, urgency="normal"):
             "notify-send",
             "--urgency", urgency,
             "--app-name", "Speech-to-Text",
-            "--expire-time", "3000",
+            "--expire-time", "1000",
+            "--hint=int:transient:1", 
             "Voice Dictation",
             message
         ], check=False, capture_output=True, text=True)
@@ -281,53 +282,65 @@ def transcribe_audio():
         show_notification(f"Transcription error: {e}", "critical")
         return None
 
+# ydotool sends raw QWERTY keycodes — remap characters so AZERTY layout
+# produces the intended output.
+# Desired AZERTY char → char to feed ydotool (QWERTY keycode equivalent)
+AZERTY_TO_YDOTOOL = {
+    # Swapped letters
+    'a': 'q', 'A': 'Q',
+    'q': 'a', 'Q': 'A',
+    'z': 'w', 'Z': 'W',
+    'w': 'z', 'W': 'Z',
+    'm': ';', 'M': ':',
+    # Digits (AZERTY needs Shift for digits)
+    '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+    '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+    # Punctuation at different positions
+    ',': 'm', '.': '<', '?': 'M',
+    ';': ',', ':': '.', '!': '/', '/': '>',
+    "'": '4', '"': '3', '-': '6', '_': '8',
+    '(': '5', ')': '-', '&': '1',
+    # French accented (AZERTY number row, unshifted)
+    '\u00e9': '2', '\u00e8': '7', '\u00e7': '9', '\u00e0': '0',
+}
+
+def remap_for_azerty(text):
+    """Remap text so ydotool QWERTY keycodes produce correct AZERTY output"""
+    return ''.join(AZERTY_TO_YDOTOOL.get(c, c) for c in text)
+
 def inject_text(text):
-    """Inject text using clipboard backup/restore method"""
-    debug_log(f"Injecting text via clipboard: '{text[:50]}{'...' if len(text) > 50 else ''}'")
+    """Inject text by typing it directly via ydotool with AZERTY remapping.
+
+    Newlines are sent as Shift+Enter so terminals insert a literal newline
+    instead of executing the current line.
+    """
+    debug_log(f"Injecting text via ydotool type: '{text[:50]}{'...' if len(text) > 50 else ''}'")
 
     try:
-        # Step 1: Backup current clipboard content
-        debug_log("Backing up current clipboard content...")
-        backup_clipboard = ""
-        try:
-            result = subprocess.run(["xclip", "-selection", "clipboard", "-o"],
-                                  capture_output=True, text=True, timeout=3)
-            if result.returncode == 0:
-                backup_clipboard = result.stdout
-                debug_log(f"Clipboard backup: '{backup_clipboard[:30]}{'...' if len(backup_clipboard) > 30 else ''}'")
-        except Exception as e:
-            debug_log(f"Clipboard backup failed (non-critical): {e}")
+        lines = text.split('\n')
+        for i, line in enumerate(lines):
+            if line:
+                remapped = remap_for_azerty(line)
+                debug_log(f"Typing line {i}: '{remapped[:50]}{'...' if len(remapped) > 50 else ''}'")
+                result = subprocess.run(
+                    ["ydotool", "type", "--", remapped],
+                    capture_output=True, text=True, timeout=10
+                )
+                if result.returncode != 0:
+                    debug_log(f"ydotool type failed: {result.stderr}")
+                    show_notification("Text typing failed", "critical")
+                    return False
 
-        # Step 2: Copy transcribed text to clipboard
-        debug_log("Copying transcribed text to clipboard...")
-        result = subprocess.run(["xclip", "-selection", "clipboard"],
-                              input=text, text=True, timeout=3)
-        if result.returncode != 0:
-            debug_log("Failed to copy text to clipboard")
-            show_notification("Failed to copy to clipboard", "critical")
-            return False
-
-        # Step 3: Small delay to ensure clipboard is ready
-        time.sleep(0.1)
-
-        # Step 4: Paste with Ctrl+V using xdotool
-        debug_log("Pasting with Ctrl+V...")
-        result = subprocess.run(["xdotool", "key", "ctrl+v"],
-                              capture_output=True, text=True, timeout=5)
-        if result.returncode != 0:
-            debug_log(f"Ctrl+V failed: {result.stderr}")
-            show_notification("Paste operation failed", "critical")
-            return False
-
-        # Step 5: Restore original clipboard content
-        debug_log("Restoring original clipboard content...")
-        time.sleep(0.2)  # Give paste operation time to complete
-        try:
-            subprocess.run(["xclip", "-selection", "clipboard"],
-                         input=backup_clipboard, text=True, timeout=3)
-            debug_log("Clipboard restored successfully")
-        except Exception as e:
-            debug_log(f"Clipboard restore failed (non-critical): {e}")
+            # Send Shift+Enter between lines (not after the last one)
+            if i < len(lines) - 1:
+                debug_log(f"Sending Shift+Enter after line {i}")
+                result = subprocess.run(
+                    ["ydotool", "key", "42:1", "28:1", "28:0", "42:0"],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode != 0:
+                    debug_log(f"ydotool key Shift+Enter failed: {result.stderr}")
+                    return False
 
         debug_log("Text injection completed successfully")
         return True
@@ -358,14 +371,12 @@ def main():
 
     # Check basic environment
     debug_log("Checking environment...")
-    for cmd in ["parec", "notify-send", "xdotool", "xclip"]:
+    for cmd in ["parec", "notify-send", "ydotool"]:
         try:
             if cmd == "parec":
                 result = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
-            elif cmd == "xdotool":
+            elif cmd == "ydotool":
                 result = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
-            elif cmd == "xclip":
-                result = subprocess.run([cmd, "-version"], capture_output=True, text=True, timeout=5)
             else:
                 result = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=5)
             debug_log(f"{cmd}: Available (exit code {result.returncode})")
