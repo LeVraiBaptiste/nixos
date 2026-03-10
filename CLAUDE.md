@@ -20,7 +20,7 @@
 - `hosts/` - Host-specific configurations
     - `desktop.nix` - Desktop: nvidia, steam, dictation, all modules
     - `laptop.nix` - Laptop: lighter config (no nvidia, steam, or dictation)
-    - `hardware-configuration.nix` - Hardware config
+    - `hardware-configuration.nix` - Desktop/laptop hardware config
 - `modules/` - Modular components:
     - `system/` - Core system config (boot, network, bluetooth, GNOME extensions, audio, printing, user)
         - `nvidia.nix` - NVIDIA drivers (desktop-only, imported by host)
