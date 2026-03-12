@@ -25,6 +25,8 @@ end
 # Action selection
 set action (printf "%s\n" \
     "Open in VS Code" \
+    "Open in Claude Code" \
+    "Open in Lazygit" \
     "Open in terminal" \
     "Open in file manager" \
     "Git status" \
@@ -33,6 +35,10 @@ set action (printf "%s\n" \
 switch "$action"
     case "Open in VS Code"
         code .
+    case "Open in Claude Code"
+        claude
+    case "Open in Lazygit"
+        lazygit
     case "Open in terminal"
         echo "Ready in (pwd)"
     case "Open in file manager"

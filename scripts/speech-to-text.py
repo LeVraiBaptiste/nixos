@@ -309,27 +309,54 @@ def remap_for_azerty(text):
     return ''.join(AZERTY_TO_YDOTOOL.get(c, c) for c in text)
 
 def inject_text(text):
-    """Inject text by typing it directly via ydotool with AZERTY remapping.
+    """Inject text line by line via clipboard paste (wl-copy + Ctrl+V).
 
-    Newlines are sent as Shift+Enter so terminals insert a literal newline
-    instead of executing the current line.
+    Each line is copied to the clipboard and pasted instantly, with
+    Shift+Enter keystrokes between lines.  Saves and restores the
+    previous clipboard contents.
     """
-    debug_log(f"Injecting text via ydotool type: '{text[:50]}{'...' if len(text) > 50 else ''}'")
+    debug_log(f"Injecting text via clipboard paste: '{text[:50]}{'...' if len(text) > 50 else ''}'")
 
     try:
+        # Save current clipboard contents
+        old_clipboard = None
+        try:
+            result = subprocess.run(
+                ["wl-paste", "--no-newline"],
+                capture_output=True, timeout=2
+            )
+            if result.returncode == 0:
+                old_clipboard = result.stdout
+                debug_log("Saved existing clipboard contents")
+        except Exception as e:
+            debug_log(f"Could not save clipboard (empty?): {e}")
+
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if line:
-                remapped = remap_for_azerty(line)
-                debug_log(f"Typing line {i}: '{remapped[:50]}{'...' if len(remapped) > 50 else ''}'")
+                # Copy line to clipboard (pipe via stdin, don't wait for wl-copy to exit
+                # since it stays alive to serve the clipboard on Wayland)
+                proc = subprocess.Popen(
+                    ["wl-copy"],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                proc.communicate(input=line.encode("utf-8"), timeout=5)
+
+                time.sleep(0.05)
+
+                # Paste with Ctrl+Shift+V (keycode 29=LCtrl, 42=LShift, 47=V)
                 result = subprocess.run(
-                    ["ydotool", "type", "--", remapped],
-                    capture_output=True, text=True, timeout=10
+                    ["ydotool", "key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"],
+                    capture_output=True, text=True, timeout=5
                 )
                 if result.returncode != 0:
-                    debug_log(f"ydotool type failed: {result.stderr}")
-                    show_notification("Text typing failed", "critical")
+                    debug_log(f"ydotool Ctrl+V failed: {result.stderr}")
+                    show_notification("Paste failed", "critical")
                     return False
+
+                debug_log(f"Pasted line {i}: '{line[:50]}{'...' if len(line) > 50 else ''}'")
 
             # Send Shift+Enter between lines (not after the last one)
             if i < len(lines) - 1:
@@ -343,6 +370,22 @@ def inject_text(text):
                     return False
 
         debug_log("Text injection completed successfully")
+
+        # Restore previous clipboard after a short delay
+        if old_clipboard is not None:
+            time.sleep(0.3)
+            try:
+                proc = subprocess.Popen(
+                    ["wl-copy"],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                proc.communicate(input=old_clipboard, timeout=5)
+                debug_log("Restored previous clipboard contents")
+            except Exception as e:
+                debug_log(f"Could not restore clipboard: {e}")
+
         return True
 
     except Exception as e:

@@ -2,6 +2,19 @@
 {
   programs.fish = {
     enable = true;
+    interactiveShellInit = ''
+      # Auto-start tmux on terminal open (skip if already in tmux or non-interactive)
+      if status is-interactive; and not set -q TMUX
+        # Restore previous sessions if tmux isn't already running
+        if not tmux has-session 2>/dev/null
+          tmux new-session -d -s default
+          tmux run-shell "bash ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+          exec tmux attach-session -t default
+        else
+          exec tmux new-session -A -s default
+        end
+      end
+    '';
     shellAliases = {
       gtnix = "cd /etc/nixos && code .";
       rebuild-desktop = "sudo nixos-rebuild switch --flake /etc/nixos#desktop";
@@ -12,6 +25,10 @@
       work = "cd ~/Documents/work && . .folderSelect.sh";
       self = "cd ~/Documents/self && . .folderSelect.sh";
       home = "cd ~";
+      lg = "lazygit";
+      ff = "fd --type f | fzf --preview 'string match -q \"*.md\" {}; and glow -s dark -w 0 {}; or bat --color=always --style=numbers {}' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro {}]'";
+      fg = "fzf --ansi --disabled --bind 'start:reload:echo Type to search...' --bind 'change:reload:rg --line-number --color=always -- {q} || true' --delimiter ':' --preview 'bat --color=always --style=numbers --highlight-line {2} {1}' --preview-window '+{2}-5' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro +{2} {1}]'";
+      t = "tmux attach || tmux";
     };
   };
 

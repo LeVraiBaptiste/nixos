@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 let
   myScript = builtins.readFile ../../scripts/folderSelect.sh;
 in
@@ -10,14 +10,6 @@ in
     programs.direnv = {
       enable = true;
       nix-direnv.enable = true;
-    };
-
-    programs.kitty = {
-      enable = true;
-      themeFile = "vague";
-      settings = lib.mkDefault {
-        update_check_interval = 0;
-      };
     };
 
     # Git credentials per directory

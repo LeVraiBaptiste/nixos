@@ -1,0 +1,19 @@
+gui:
+  showIcons: true
+  nerdFontsVersion: "3"
+  theme:
+    activeBorderColor:
+      - white
+      - bold
+    inactiveBorderColor:
+      - "#666666"
+    lightTheme: false
+git:
+  pagers:
+    - pager: "delta --dark --paging=never"
+  autoFetch: true
+  autoRefresh: true
+os:
+  edit: "nvim {{filename}}"
+  editAtLine: "nvim +{{line}} {{filename}}"
+confirmOnQuit: false

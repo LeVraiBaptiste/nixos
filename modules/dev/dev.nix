@@ -20,6 +20,9 @@
 
     # Editors
     vscode
+    neovim
+    micro
+    glow
     pkgs-unstable.claude-code
   ];
 }
