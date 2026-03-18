@@ -13,6 +13,7 @@
     ../modules/home
     ../modules/dev
     ../modules/brave.nix
+    ../modules/zen-browser.nix
     ../modules/steam.nix
     ../modules/system/virt/docker.nix
     ../modules/dictation.nix

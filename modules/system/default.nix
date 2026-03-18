@@ -23,7 +23,7 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" ];
   };
 
   # Allow unfree packages

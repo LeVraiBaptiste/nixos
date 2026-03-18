@@ -1,6 +1,7 @@
 gui:
   showIcons: true
   nerdFontsVersion: "3"
+  sidePanelWidth: 0.2
   theme:
     activeBorderColor:
       - white
@@ -10,7 +11,8 @@ gui:
     lightTheme: false
 git:
   pagers:
-    - pager: "delta --dark --paging=never"
+    - pager: "delta --dark --paging=never --side-by-side --syntax-theme='Visual Studio Dark+'"
+  diffContextSize: 99999
   autoFetch: true
   autoRefresh: true
 os:
