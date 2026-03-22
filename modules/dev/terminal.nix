@@ -29,7 +29,7 @@
       ff = "fd --type f | fzf --preview-window 'right:50%' --preview 'string match -q \"*.md\" {}; and CLICOLOR_FORCE=1 COLORTERM=truecolor glow -s tokyo-night -w 80 {}; or bat --color=always --style=numbers {}' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro {}]'";
       fg = "fzf --ansi --disabled --bind 'start:reload:echo Type to search...' --bind 'change:reload:rg --line-number --color=always -- {q} || true' --delimiter ':' --preview 'bat --color=always --style=numbers --highlight-line {2} {1}' --preview-window '+{2}-5' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro +{2} {1}]'";
       t = "tmux attach || tmux";
-      ssh-desktop = "ssh bat@desktop.local.com -t tmux default -A -s main";
+      ssh-desktop = "ssh bat@desktop.local.com -t tmux new-session -A -s default";
     };
   };
 
