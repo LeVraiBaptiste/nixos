@@ -17,6 +17,7 @@
     ../modules/steam.nix
     ../modules/system/virt/docker.nix
     ../modules/dictation.nix
+    ../modules/system/ssh.nix
   ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
