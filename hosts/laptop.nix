@@ -7,7 +7,7 @@
 {
   imports =
   [
-    ./hardware-configuration.nix
+    ./laptop-hardware-configuration.nix
     ../modules/system
     ../modules/home
     ../modules/dev
