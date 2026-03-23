@@ -13,6 +13,7 @@
     gnumake
 
     # Dev tools
+    gh
     jq
     ffmpeg
     kubernetes-helm
