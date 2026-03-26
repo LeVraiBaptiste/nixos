@@ -16,7 +16,8 @@
       end
     '';
     shellAliases = {
-      gtnix = "cd /etc/nixos && code .";
+      gtnix = "cd /etc/nixos && . .folderSelect.sh";
+      update = "sudo nix flake update --flake /etc/nixos";
       rebuild-desktop = "sudo nixos-rebuild switch --flake /etc/nixos#desktop";
       rebuild-laptop = "sudo nixos-rebuild switch --flake /etc/nixos#laptop";
       rebuild-server = "sudo nixos-rebuild switch --flake ~/Documents/self/homelab#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password";

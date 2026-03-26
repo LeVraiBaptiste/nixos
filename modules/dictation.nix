@@ -6,7 +6,7 @@ let
   modelsDir = "/etc/nixos/models";
   stateDir = "/var/lib/whisper-server";
   activeModelLink = "${stateDir}/model.bin";
-  defaultModel = "${modelsDir}/ggml-medium.bin";
+  defaultModel = "${modelsDir}/ggml-large-v3-turbo.bin";
 
   # Create scripts with proper permissions
   dictateScript = pkgs.writeShellScriptBin "dictate" (builtins.readFile ../scripts/dictate.sh);
@@ -47,7 +47,7 @@ in
     path = [ pkgs.ffmpeg ];
 
     serviceConfig = {
-      ExecStart = "${whisperCuda}/bin/whisper-server --model ${activeModelLink} --host 127.0.0.1 --port 8080 --convert -l auto";
+      ExecStart = "${whisperCuda}/bin/whisper-server --model ${activeModelLink} --host 127.0.0.1 --port 8080 --convert -l fr --beam-size 5 --best-of 5";
       Restart = "on-failure";
       RestartSec = 5;
       ConditionPathExists = activeModelLink;

@@ -9,5 +9,6 @@
     ./terminal.nix
     ./tmux.nix
     ./lazygit.nix
+    ./claude-code.nix
   ];
 }
