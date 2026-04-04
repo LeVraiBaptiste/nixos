@@ -3,15 +3,22 @@
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
-      # Auto-start tmux on terminal open (skip if already in tmux or non-interactive)
+      # Session picker on terminal open (skip if already in tmux or non-interactive)
       if status is-interactive; and not set -q TMUX
-        # Restore previous sessions if tmux isn't already running
-        if not tmux has-session 2>/dev/null
-          tmux new-session -d -s default
-          tmux run-shell "bash ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
-          exec tmux attach-session -t default
-        else
-          exec tmux new-session -A -s default
+        set choice (printf "tmux\nshell" | fzf --height=4 --layout=reverse --prompt="Session > " --no-info)
+        switch "$choice"
+          case "tmux"
+            if not tmux has-session 2>/dev/null
+              tmux new-session -d -s default
+              tmux run-shell "bash ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+              exec tmux attach-session -t default
+            else
+              exec tmux new-session -A -s default
+            end
+          case "shell"
+            # Continue with normal Fish shell
+          case "*"
+            # Escape/empty selection: continue with normal shell
         end
       end
     '';
