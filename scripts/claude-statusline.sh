@@ -3,6 +3,7 @@
 # Reads JSON from stdin, outputs a colored two-line status bar
 
 set -euo pipefail
+export LC_NUMERIC=C
 
 # Read JSON from stdin
 json=$(cat)

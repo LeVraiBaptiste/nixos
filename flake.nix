@@ -22,6 +22,9 @@
       pkgs-unstable = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
+        overlays = [
+          (import ./overlays/claude-code.nix)
+        ];
       };
 
       sharedSpecialArgs = {

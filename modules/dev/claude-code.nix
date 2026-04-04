@@ -11,6 +11,10 @@
         command = "~/.claude/statusline.sh";
         padding = 2;
       };
+      attribution = {
+        commit = "";
+        pr = "";
+      };
     };
 
     home.file.".claude/statusline.sh" = {
