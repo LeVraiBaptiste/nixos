@@ -13,7 +13,7 @@
     yaml-language-server
     tailwindcss-language-server
     dockerfile-language-server
-    nodePackages.bash-language-server
+    bash-language-server
 
     # Dependencies for Treesitter, Telescope, etc.
     ripgrep
