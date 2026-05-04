@@ -11,7 +11,7 @@ final: prev: {
     };
 
     nativeBuildInputs = [ final.makeWrapper ];
-    buildInputs = [ final.nodejs_22 ];
+    buildInputs = [ final.nodejs_24 ];
 
     dontBuild = true;
     dontConfigure = true;
@@ -27,7 +27,7 @@ final: prev: {
         $out/lib/claude-code/cli.js
 
       mkdir -p $out/bin
-      makeWrapper ${final.nodejs_22}/bin/node $out/bin/claude \
+      makeWrapper ${final.nodejs_24}/bin/node $out/bin/claude \
         --add-flags "-- $out/lib/claude-code/cli.js" \
         --set DISABLE_AUTOUPDATER 1 \
         --set DISABLE_INSTALLATION_CHECKS 1

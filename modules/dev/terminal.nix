@@ -2,10 +2,13 @@
 {
   programs.fish = {
     enable = true;
+    shellInit = ''
+      set -gx CLAUDE_CODE_NO_FLICKER 1
+    '';
     interactiveShellInit = ''
       # Session picker on terminal open (skip if already in tmux or non-interactive)
       if status is-interactive; and not set -q TMUX
-        set choice (printf "tmux\nshell" | fzf --height=4 --layout=reverse --prompt="Session > " --no-info)
+        set choice (printf "tmux\nclaude-foreman\nshell" | fzf --height=5 --layout=reverse --prompt="Session > " --no-info)
         switch "$choice"
           case "tmux"
             if not tmux has-session 2>/dev/null
@@ -15,6 +18,8 @@
             else
               exec tmux new-session -A -s default
             end
+          case "claude-foreman"
+            claude-foreman
           case "shell"
             # Continue with normal Fish shell
           case "*"

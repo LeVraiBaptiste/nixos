@@ -1,8 +1,9 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 {
-  environment.systemPackages = with pkgs; [
-    tmux
-    wl-clipboard
+  environment.systemPackages = [
+    pkgs.tmux
+    pkgs.wl-clipboard
+    inputs.claude-foreman.packages.${pkgs.system}.default
   ];
 
   home-manager.users.bat = {

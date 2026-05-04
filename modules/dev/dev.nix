@@ -3,7 +3,7 @@
   environment.systemPackages = with pkgs; [
     # Languages & runtimes
     gcc
-    nodejs_22
+    nodejs_24
     python3
     go
     bun

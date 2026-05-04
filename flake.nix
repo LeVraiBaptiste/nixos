@@ -13,9 +13,14 @@
       url = "github:youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    claude-foreman = {
+      url = "github:LeVraiBaptiste/claude-foreman";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, zen-browser, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, zen-browser, claude-foreman, ... }:
     let
       system = "x86_64-linux";
 
