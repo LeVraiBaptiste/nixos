@@ -8,11 +8,17 @@ let
   activeModelLink = "${stateDir}/model.bin";
   defaultModel = "${modelsDir}/ggml-large-v3-turbo.bin";
 
+  # LLM prompt file for dictation cleanup
+  llmPromptFile = pkgs.writeText "dictation-llm-prompt.txt"
+    (builtins.readFile ../scripts/dictation-llm-prompt.txt);
+
   # Create scripts with proper permissions
   dictateScript = pkgs.writeShellScriptBin "dictate" (builtins.readFile ../scripts/dictate.sh);
   setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (builtins.readFile ../scripts/setup-whisper-models.sh);
   speechToTextScript = pkgs.writeScriptBin "speech-to-text" ''
     #!${pkgs.python3}/bin/python3
+    import os
+    os.environ.setdefault("DICTATION_LLM_PROMPT", "${llmPromptFile}")
     ${builtins.readFile ../scripts/speech-to-text.py}
   '';
   whisperClientScript = pkgs.writeScriptBin "whisper-client" ''
@@ -24,6 +30,7 @@ in
 {
   environment.systemPackages = with pkgs; [
     whisperCuda
+    ffmpeg
     wl-clipboard  # Wayland-native clipboard (wl-copy/wl-paste)
     libnotify
     pulseaudio

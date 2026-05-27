@@ -17,6 +17,7 @@
     ../modules/steam.nix
     ../modules/system/virt/docker.nix
     ../modules/dictation.nix
+    ../modules/ollama.nix
     ../modules/system/ssh.nix
   ];
 

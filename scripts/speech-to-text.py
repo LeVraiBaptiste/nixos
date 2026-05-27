@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -13,9 +14,24 @@ from urllib.request import Request, urlopen
 
 # Configuration
 WHISPER_SERVER_URL = "http://127.0.0.1:8080/inference"
+WHISPER_TIMEOUT = 120
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "gemma4:e4b"
+OLLAMA_TIMEOUT = 120
+
 AUDIO_FILE = "/tmp/speech_recording.wav"
 RECORDING_PID_FILE = "/tmp/speech_recording.pid"
+MODE_FILE = "/tmp/speech_recording.mode"
 DEBUG_LOG = "/tmp/speech_debug.log"
+SEGMENT_PREFIX = "/tmp/speech_segment_"
+
+DICTATION_DIR = os.path.expanduser("~/dictation")
+LONG_RECORDING_THRESHOLD = 120  # seconds
+
+# Silence detection params
+SILENCE_NOISE_THRESHOLD = "-30dB"
+SILENCE_MIN_DURATION = "2"  # seconds
+
 
 def debug_log(message):
     """Write debug message to log file"""
@@ -25,7 +41,8 @@ def debug_log(message):
             f.write(f"[{timestamp}] {message}\n")
         print(f"DEBUG: {message}")
     except:
-        print(f"DEBUG: {message}")  # Fallback to stdout if log fails
+        print(f"DEBUG: {message}")
+
 
 def show_notification(message, urgency="normal"):
     """Show desktop notification"""
@@ -36,7 +53,7 @@ def show_notification(message, urgency="normal"):
             "--urgency", urgency,
             "--app-name", "Speech-to-Text",
             "--expire-time", "1000",
-            "--hint=int:transient:1", 
+            "--hint=int:transient:1",
             "Voice Dictation",
             message
         ], check=False, capture_output=True, text=True)
@@ -45,58 +62,58 @@ def show_notification(message, urgency="normal"):
     except Exception as e:
         debug_log(f"Notification failed: {e}")
 
+
+# --- Mode persistence ---
+
+def write_mode(mode):
+    with open(MODE_FILE, 'w') as f:
+        f.write(mode)
+    debug_log(f"Wrote mode: {mode}")
+
+
+def read_mode():
+    try:
+        with open(MODE_FILE, 'r') as f:
+            mode = f.read().strip()
+        debug_log(f"Read mode: {mode}")
+        return mode if mode in ("raw", "llm") else "raw"
+    except Exception:
+        debug_log("No mode file found, defaulting to raw")
+        return "raw"
+
+
+# --- Recording state ---
+
 def is_recording():
     """Check if recording is active by checking PID file"""
-    debug_log("Checking if recording is active...")
-
     if not os.path.exists(RECORDING_PID_FILE):
-        debug_log("No PID file found - not recording")
         return False
-
     try:
         with open(RECORDING_PID_FILE, 'r') as f:
-            pid_str = f.read().strip()
-            debug_log(f"Found PID file with content: '{pid_str}'")
-            pid = int(pid_str)
-
-        # Check if process is still running
-        debug_log(f"Checking if PID {pid} is still running...")
-        os.kill(pid, 0)  # This will raise OSError if process doesn't exist
-        debug_log(f"PID {pid} is still running - recording is active")
+            pid = int(f.read().strip())
+        os.kill(pid, 0)
         return True
-    except (OSError, ValueError) as e:
-        debug_log(f"PID check failed: {e} - cleaning up stale PID file")
-        # Clean up stale PID file
+    except (OSError, ValueError):
         try:
             os.remove(RECORDING_PID_FILE)
-            debug_log("Removed stale PID file")
-        except Exception as cleanup_e:
-            debug_log(f"Failed to remove PID file: {cleanup_e}")
+        except Exception:
+            pass
         return False
 
-def start_recording():
+
+def start_recording(mode):
     """Start recording audio"""
-    debug_log("Starting recording process...")
+    debug_log(f"Starting recording in {mode} mode...")
     try:
-        # Clean up any existing files
-        debug_log("Cleaning up existing files...")
-        for f in [AUDIO_FILE, RECORDING_PID_FILE]:
+        for f in [AUDIO_FILE, RECORDING_PID_FILE, MODE_FILE]:
             if os.path.exists(f):
-                debug_log(f"Removing existing file: {f}")
                 os.remove(f)
 
-        show_notification("🎤 Recording... Press Super+Space to stop")
+        mode_label = "LLM" if mode == "llm" else "Raw"
+        show_notification(f"🎤 Recording ({mode_label})... Press shortcut to stop")
 
-        # Check if parec is available
-        try:
-            subprocess.run(["parec", "--help"], check=True, capture_output=True)
-            debug_log("parec is available")
-        except:
-            debug_log("ERROR: parec is not available!")
-            show_notification("parec not found - install pulseaudio", "critical")
-            return False
+        write_mode(mode)
 
-        # Start recording using parec (PulseAudio record)
         cmd = [
             "parec",
             "--format=s16le",
@@ -105,30 +122,24 @@ def start_recording():
             "--file-format=wav",
             AUDIO_FILE
         ]
-        debug_log(f"Starting parec with command: {' '.join(cmd)}")
+        debug_log(f"Starting parec: {' '.join(cmd)}")
 
         process = subprocess.Popen(cmd,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
 
-        # Wait a moment to see if the process starts successfully
         time.sleep(0.2)
 
         if process.poll() is not None:
-            # Process has already terminated
             stdout, stderr = process.communicate()
-            debug_log(f"pactl failed immediately! returncode: {process.returncode}")
-            debug_log(f"stdout: {stdout.decode()}")
-            debug_log(f"stderr: {stderr.decode()}")
+            debug_log(f"parec failed: {stderr.decode()}")
             show_notification(f"Recording failed: {stderr.decode()[:100]}", "critical")
             return False
 
-        # Save PID for later termination
         with open(RECORDING_PID_FILE, 'w') as f:
             f.write(str(process.pid))
 
         debug_log(f"Started recording with PID {process.pid}")
-        print(f"Started recording with PID {process.pid}")
         return True
 
     except Exception as e:
@@ -136,102 +147,109 @@ def start_recording():
         show_notification(f"Recording failed: {e}", "critical")
         return False
 
-def stop_recording():
-    """Stop recording and transcribe audio"""
-    debug_log("Stopping recording process...")
+
+# --- Audio analysis ---
+
+def get_audio_duration(filepath):
+    """Get audio duration in seconds from file size (16kHz, 16-bit mono = 32000 bytes/sec)"""
     try:
-        if not os.path.exists(RECORDING_PID_FILE):
-            debug_log("No PID file found - no recording in progress")
-            show_notification("No recording in progress", "normal")
-            return False
+        file_size = os.path.getsize(filepath)
+        # WAV header is 44 bytes
+        duration = max(0, (file_size - 44)) / 32000.0
+        debug_log(f"Audio duration: {duration:.1f}s (file size: {file_size} bytes)")
+        return duration
+    except Exception as e:
+        debug_log(f"Failed to get audio duration: {e}")
+        return 0.0
 
-        # Get and kill recording process
-        with open(RECORDING_PID_FILE, 'r') as f:
-            pid_str = f.read().strip()
-            debug_log(f"Found PID to kill: {pid_str}")
-            pid = int(pid_str)
 
-        try:
-            debug_log(f"Sending SIGTERM to PID {pid}")
-            os.kill(pid, signal.SIGTERM)
-            debug_log(f"Successfully stopped recording process {pid}")
-            print(f"Stopped recording process {pid}")
-        except OSError as e:
-            debug_log(f"Process {pid} already stopped or doesn't exist: {e}")
-            print("Recording process already stopped")
+def detect_silence_breaks(filepath):
+    """Detect silence boundaries using ffmpeg silencedetect.
+    Returns list of split-point timestamps (midpoints of silence regions)."""
+    debug_log("Running silence detection...")
+    try:
+        result = subprocess.run([
+            "ffmpeg", "-i", filepath,
+            "-af", f"silencedetect=n={SILENCE_NOISE_THRESHOLD}:d={SILENCE_MIN_DURATION}",
+            "-f", "null", "-"
+        ], capture_output=True, text=True, timeout=60)
 
-        # Clean up PID file
-        os.remove(RECORDING_PID_FILE)
-        debug_log("Removed PID file")
+        stderr = result.stderr
+        # Parse silence_start and silence_end pairs
+        starts = [float(m) for m in re.findall(r'silence_start:\s*([\d.]+)', stderr)]
+        ends = [float(m) for m in re.findall(r'silence_end:\s*([\d.]+)', stderr)]
 
-        # Wait for file to be fully written
-        debug_log("Waiting 0.5s for file to be fully written...")
-        time.sleep(0.5)
+        # Compute midpoints of silence regions as split points
+        split_points = []
+        for s, e in zip(starts, ends):
+            midpoint = (s + e) / 2.0
+            split_points.append(midpoint)
 
-        # Check if audio file exists and has reasonable size
-        if not os.path.exists(AUDIO_FILE):
-            debug_log(f"Audio file {AUDIO_FILE} does not exist!")
-            show_notification("No audio file created", "normal")
-            cleanup_files()
-            return False
-
-        file_size = os.path.getsize(AUDIO_FILE)
-        debug_log(f"Audio file size: {file_size} bytes")
-
-        if file_size < 3000:
-            debug_log(f"Audio file too small ({file_size} bytes < 3000)")
-            show_notification("Recording too short - try speaking longer", "normal")
-            cleanup_files()
-            return False
-
-        # Transcribe audio
-        debug_log("Starting transcription...")
-        show_notification("🔄 Processing speech...")
-        text = transcribe_audio()
-        debug_log(f"Transcription result: '{text}'")
-
-        # Clean up audio file
-        cleanup_files()
-        debug_log("Cleaned up temporary files")
-
-        if not text or not text.strip():
-            debug_log("No text returned from transcription")
-            show_notification("No speech detected", "normal")
-            return False
-
-        # Inject text
-        text = text.strip()
-        debug_log(f"Attempting to inject text: '{text[:100]}{'...' if len(text) > 100 else ''}'")
-        time.sleep(0.1)  # Small delay before injection
-
-        if inject_text(text):
-            debug_log("Text injection successful")
-            show_notification(f"✅ {text[:60]}{'...' if len(text) > 60 else ''}")
-            return True
-        else:
-            debug_log("Text injection failed")
-            return False
+        debug_log(f"Found {len(split_points)} silence breaks: {split_points}")
+        return split_points
 
     except Exception as e:
-        debug_log(f"Exception in stop_recording: {e}")
-        show_notification(f"Stop recording failed: {e}", "critical")
-        cleanup_files()
-        return False
+        debug_log(f"Silence detection failed: {e}")
+        return []
 
-def transcribe_audio():
-    """Transcribe audio via whisper-server HTTP API"""
-    debug_log("Starting audio transcription via whisper-server...")
-    debug_log(f"Server URL: {WHISPER_SERVER_URL}")
+
+def split_audio_segments(filepath, split_points, duration):
+    """Split audio file at given timestamps. Returns list of segment file paths."""
+    if not split_points:
+        debug_log("No split points, using whole file as single segment")
+        return [filepath]
+
+    # Build segment boundaries: [(start, end), ...]
+    boundaries = []
+    prev = 0.0
+    for point in split_points:
+        if point > prev:
+            boundaries.append((prev, point))
+        prev = point
+    if prev < duration:
+        boundaries.append((prev, duration))
+
+    if len(boundaries) <= 1:
+        debug_log("Only one segment after splitting, using whole file")
+        return [filepath]
+
+    segment_files = []
+    for i, (start, end) in enumerate(boundaries):
+        segment_path = f"{SEGMENT_PREFIX}{i}.wav"
+        try:
+            subprocess.run([
+                "ffmpeg", "-y",
+                "-ss", str(start),
+                "-to", str(end),
+                "-i", filepath,
+                "-c", "copy",
+                segment_path
+            ], capture_output=True, text=True, timeout=30, check=True)
+            segment_files.append(segment_path)
+            debug_log(f"Segment {i}: {start:.1f}s - {end:.1f}s → {segment_path}")
+        except Exception as e:
+            debug_log(f"Failed to extract segment {i}: {e}")
+
+    if not segment_files:
+        debug_log("All segment extractions failed, falling back to whole file")
+        return [filepath]
+
+    return segment_files
+
+
+# --- Transcription ---
+
+def transcribe_audio(filepath):
+    """Transcribe a single audio file via whisper-server HTTP API"""
+    debug_log(f"Transcribing {filepath}...")
 
     try:
         boundary = uuid.uuid4().hex
-
-        with open(AUDIO_FILE, "rb") as f:
+        with open(filepath, "rb") as f:
             audio_data = f.read()
 
-        filename = os.path.basename(AUDIO_FILE)
+        filename = os.path.basename(filepath)
 
-        # Build multipart/form-data body
         parts = []
         parts.append(
             f"--{boundary}\r\n"
@@ -266,11 +284,10 @@ def transcribe_audio():
             method="POST",
         )
 
-        debug_log("Sending request to whisper-server...")
-        response = urlopen(req, timeout=30)
+        response = urlopen(req, timeout=WHISPER_TIMEOUT)
         result = json.loads(response.read().decode("utf-8"))
         text = result.get("text", "").strip()
-        debug_log(f"Server response text: '{text}'")
+        debug_log(f"Transcription result: '{text[:100]}{'...' if len(text) > 100 else ''}'")
         return text
 
     except (ConnectionRefusedError, URLError) as e:
@@ -278,35 +295,95 @@ def transcribe_audio():
         show_notification("Whisper server not running", "critical")
         return None
     except Exception as e:
-        debug_log(f"Exception in transcribe_audio: {e}")
-        show_notification(f"Transcription error: {e}", "critical")
+        debug_log(f"Transcription error: {e}")
         return None
+
+
+def transcribe_segments(segment_files):
+    """Transcribe multiple audio segments and concatenate results."""
+    texts = []
+    for filepath in segment_files:
+        text = transcribe_audio(filepath)
+        if text:
+            texts.append(text)
+    combined = " ".join(texts)
+    debug_log(f"Combined transcription ({len(texts)} segments): '{combined[:100]}...'")
+    return combined
+
+
+# --- LLM cleanup ---
+
+def load_llm_prompt():
+    """Load LLM system prompt from external file."""
+    prompt_path = os.environ.get("DICTATION_LLM_PROMPT", "")
+    if prompt_path and os.path.isfile(prompt_path):
+        with open(prompt_path, 'r') as f:
+            return f.read().strip()
+    debug_log(f"LLM prompt file not found at: {prompt_path}")
+    return "Clean up this French speech transcription. Fix punctuation, remove filler words and repetitions. Return only the cleaned text."
+
+
+def llm_cleanup(text):
+    """Pass text through Ollama for cleanup. Falls back to raw text on failure."""
+    debug_log(f"Running LLM cleanup on {len(text)} chars...")
+    system_prompt = load_llm_prompt()
+
+    try:
+        payload = json.dumps({
+            "model": OLLAMA_MODEL,
+            "prompt": f"{system_prompt}\n\nTranscription:\n{text}",
+            "stream": False,
+            "think": False,
+        }).encode("utf-8")
+
+        req = Request(
+            OLLAMA_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        response = urlopen(req, timeout=OLLAMA_TIMEOUT)
+        result = json.loads(response.read().decode("utf-8"))
+        cleaned = result.get("response", "").strip()
+
+        if cleaned:
+            debug_log(f"LLM cleanup result: '{cleaned[:100]}...'")
+            return cleaned
+        else:
+            debug_log("LLM returned empty response, using raw text")
+            return text
+
+    except Exception as e:
+        debug_log(f"LLM cleanup failed: {e}")
+        show_notification(f"LLM cleanup failed, using raw text", "normal")
+        return text
+
+
+# --- Text output ---
 
 # ydotool sends raw QWERTY keycodes — remap characters so AZERTY layout
 # produces the intended output.
-# Desired AZERTY char → char to feed ydotool (QWERTY keycode equivalent)
 AZERTY_TO_YDOTOOL = {
-    # Swapped letters
     'a': 'q', 'A': 'Q',
     'q': 'a', 'Q': 'A',
     'z': 'w', 'Z': 'W',
     'w': 'z', 'W': 'Z',
     'm': ';', 'M': ':',
-    # Digits (AZERTY needs Shift for digits)
     '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
     '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
-    # Punctuation at different positions
     ',': 'm', '.': '<', '?': 'M',
     ';': ',', ':': '.', '!': '/', '/': '>',
     "'": '4', '"': '3', '-': '6', '_': '8',
     '(': '5', ')': '-', '&': '1',
-    # French accented (AZERTY number row, unshifted)
     '\u00e9': '2', '\u00e8': '7', '\u00e7': '9', '\u00e0': '0',
 }
+
 
 def remap_for_azerty(text):
     """Remap text so ydotool QWERTY keycodes produce correct AZERTY output"""
     return ''.join(AZERTY_TO_YDOTOOL.get(c, c) for c in text)
+
 
 def inject_text(text):
     """Inject text line by line via clipboard paste (wl-copy + Ctrl+V).
@@ -315,7 +392,7 @@ def inject_text(text):
     Shift+Enter keystrokes between lines.  Saves and restores the
     previous clipboard contents.
     """
-    debug_log(f"Injecting text via clipboard paste: '{text[:50]}{'...' if len(text) > 50 else ''}'")
+    debug_log(f"Injecting text via clipboard paste: '{text[:50]}...'")
 
     try:
         # Save current clipboard contents
@@ -327,15 +404,12 @@ def inject_text(text):
             )
             if result.returncode == 0:
                 old_clipboard = result.stdout
-                debug_log("Saved existing clipboard contents")
-        except Exception as e:
-            debug_log(f"Could not save clipboard (empty?): {e}")
+        except Exception:
+            pass
 
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if line:
-                # Copy line to clipboard (pipe via stdin, don't wait for wl-copy to exit
-                # since it stays alive to serve the clipboard on Wayland)
                 proc = subprocess.Popen(
                     ["wl-copy"],
                     stdin=subprocess.PIPE,
@@ -352,26 +426,23 @@ def inject_text(text):
                     capture_output=True, text=True, timeout=5
                 )
                 if result.returncode != 0:
-                    debug_log(f"ydotool Ctrl+V failed: {result.stderr}")
+                    debug_log(f"ydotool paste failed: {result.stderr}")
                     show_notification("Paste failed", "critical")
                     return False
 
-                debug_log(f"Pasted line {i}: '{line[:50]}{'...' if len(line) > 50 else ''}'")
-
             # Send Shift+Enter between lines (not after the last one)
             if i < len(lines) - 1:
-                debug_log(f"Sending Shift+Enter after line {i}")
                 result = subprocess.run(
                     ["ydotool", "key", "42:1", "28:1", "28:0", "42:0"],
                     capture_output=True, text=True, timeout=5
                 )
                 if result.returncode != 0:
-                    debug_log(f"ydotool key Shift+Enter failed: {result.stderr}")
+                    debug_log(f"ydotool Shift+Enter failed: {result.stderr}")
                     return False
 
         debug_log("Text injection completed successfully")
 
-        # Restore previous clipboard after a short delay
+        # Restore previous clipboard
         if old_clipboard is not None:
             time.sleep(0.3)
             try:
@@ -382,9 +453,8 @@ def inject_text(text):
                     stderr=subprocess.DEVNULL
                 )
                 proc.communicate(input=old_clipboard, timeout=5)
-                debug_log("Restored previous clipboard contents")
-            except Exception as e:
-                debug_log(f"Could not restore clipboard: {e}")
+            except Exception:
+                pass
 
         return True
 
@@ -393,67 +463,172 @@ def inject_text(text):
         show_notification(f"Text injection failed: {e}", "critical")
         return False
 
+
+def output_result(text, duration, mode):
+    """Route output: clipboard for short, file for long."""
+    mode_label = "LLM" if mode == "llm" else "Raw"
+
+    if duration < LONG_RECORDING_THRESHOLD:
+        # Short: paste to clipboard
+        debug_log(f"Short recording ({duration:.0f}s), pasting to clipboard")
+        time.sleep(0.1)
+        if inject_text(text):
+            show_notification(f"✅ ({mode_label}) {text[:60]}{'...' if len(text) > 60 else ''}")
+            return True
+        else:
+            return False
+    else:
+        # Long: save to file
+        debug_log(f"Long recording ({duration:.0f}s), saving to file")
+        os.makedirs(DICTATION_DIR, exist_ok=True)
+        filename = datetime.now().strftime("%Y-%m-%d_%H-%M") + f"_{mode}.txt"
+        filepath = os.path.join(DICTATION_DIR, filename)
+        with open(filepath, 'w') as f:
+            f.write(text)
+        debug_log(f"Saved to {filepath}")
+        show_notification(f"📄 ({mode_label}) Saved to ~/dictation/{filename}")
+        return True
+
+
+# --- Main pipeline ---
+
 def cleanup_files():
     """Clean up temporary files"""
-    for f in [AUDIO_FILE, RECORDING_PID_FILE]:
+    for f in [AUDIO_FILE, RECORDING_PID_FILE, MODE_FILE]:
         if os.path.exists(f):
             try:
                 os.remove(f)
-            except:
+            except Exception:
                 pass
+    # Clean up any segment files
+    import glob
+    for f in glob.glob(f"{SEGMENT_PREFIX}*.wav"):
+        try:
+            os.remove(f)
+        except Exception:
+            pass
+
+
+def stop_recording():
+    """Stop recording and process audio through the pipeline."""
+    debug_log("Stopping recording...")
+    mode = read_mode()
+    segment_files = []
+
+    try:
+        if not os.path.exists(RECORDING_PID_FILE):
+            show_notification("No recording in progress", "normal")
+            return False
+
+        # Kill recording process
+        with open(RECORDING_PID_FILE, 'r') as f:
+            pid = int(f.read().strip())
+
+        try:
+            os.kill(pid, signal.SIGTERM)
+            debug_log(f"Stopped recording PID {pid}")
+        except OSError:
+            debug_log(f"Process {pid} already stopped")
+
+        os.remove(RECORDING_PID_FILE)
+        time.sleep(0.5)
+
+        # Validate audio file
+        if not os.path.exists(AUDIO_FILE):
+            show_notification("No audio file created", "normal")
+            cleanup_files()
+            return False
+
+        file_size = os.path.getsize(AUDIO_FILE)
+        if file_size < 3000:
+            debug_log(f"Audio file too small ({file_size} bytes)")
+            show_notification("Recording too short", "normal")
+            cleanup_files()
+            return False
+
+        # Pipeline: duration → silence detect → split → transcribe → [llm] → output
+        show_notification("🔄 Processing speech...")
+        pipeline_start = time.time()
+
+        duration = get_audio_duration(AUDIO_FILE)
+
+        t0 = time.time()
+        split_points = detect_silence_breaks(AUDIO_FILE)
+        debug_log(f"[BENCH] silence detect: {time.time() - t0:.2f}s")
+
+        t0 = time.time()
+        segment_files = split_audio_segments(AUDIO_FILE, split_points, duration)
+        debug_log(f"[BENCH] audio split: {time.time() - t0:.2f}s ({len(segment_files)} segments)")
+
+        t0 = time.time()
+        text = transcribe_segments(segment_files)
+        debug_log(f"[BENCH] transcription: {time.time() - t0:.2f}s ({len(text)} chars)")
+
+        if not text or not text.strip():
+            show_notification("No speech detected", "normal")
+            cleanup_files()
+            return False
+
+        text = text.strip()
+
+        if mode == "llm":
+            show_notification("🤖 Cleaning up with LLM...")
+            t0 = time.time()
+            text = llm_cleanup(text)
+            debug_log(f"[BENCH] LLM cleanup: {time.time() - t0:.2f}s ({len(text)} chars)")
+
+        debug_log(f"[BENCH] total pipeline: {time.time() - pipeline_start:.2f}s")
+
+        success = output_result(text, duration, mode)
+        return success
+
+    except Exception as e:
+        debug_log(f"Exception in stop_recording: {e}")
+        show_notification(f"Processing failed: {e}", "critical")
+        return False
+    finally:
+        # Always clean up segment files
+        for seg in segment_files:
+            if seg != AUDIO_FILE and os.path.exists(seg):
+                try:
+                    os.remove(seg)
+                except Exception:
+                    pass
+        cleanup_files()
+
 
 def main():
     """Main toggle function"""
     debug_log("=== SPEECH-TO-TEXT SCRIPT STARTED ===")
-    debug_log(f"Python version: {sys.version}")
-    debug_log(f"Working directory: {os.getcwd()}")
-    debug_log(f"User: {os.getenv('USER', 'unknown')}")
-    debug_log(f"Audio file path: {AUDIO_FILE}")
-    debug_log(f"PID file path: {RECORDING_PID_FILE}")
-    debug_log(f"Debug log: {DEBUG_LOG}")
 
-    # Check basic environment
-    debug_log("Checking environment...")
-    for cmd in ["parec", "notify-send", "ydotool"]:
-        try:
-            if cmd == "parec":
-                result = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
-            elif cmd == "ydotool":
-                result = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
-            else:
-                result = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=5)
-            debug_log(f"{cmd}: Available (exit code {result.returncode})")
-        except Exception as e:
-            debug_log(f"{cmd}: NOT AVAILABLE - {e}")
+    mode_arg = sys.argv[1] if len(sys.argv) > 1 else "raw"
+    if mode_arg not in ("raw", "llm"):
+        debug_log(f"Unknown mode '{mode_arg}', defaulting to raw")
+        mode_arg = "raw"
+
+    debug_log(f"Mode argument: {mode_arg}")
 
     try:
-        recording_status = is_recording()
-        debug_log(f"Current recording status: {recording_status}")
-
-        if recording_status:
-            debug_log("Attempting to stop recording...")
-            print("Stopping recording...")
+        if is_recording():
+            debug_log("Currently recording, stopping...")
             success = stop_recording()
-            debug_log(f"Stop recording result: {success}")
             return 0 if success else 1
         else:
-            debug_log("Attempting to start recording...")
-            print("Starting recording...")
-            success = start_recording()
-            debug_log(f"Start recording result: {success}")
+            debug_log(f"Not recording, starting in {mode_arg} mode...")
+            success = start_recording(mode_arg)
             return 0 if success else 1
 
     except KeyboardInterrupt:
-        debug_log("Received KeyboardInterrupt")
         if is_recording():
             stop_recording()
         return 0
     except Exception as e:
-        debug_log(f"Unhandled exception in main: {e}")
+        debug_log(f"Unhandled exception: {e}")
         show_notification(f"Error: {e}", "critical")
         return 1
     finally:
         debug_log("=== SPEECH-TO-TEXT SCRIPT ENDED ===\n")
+
 
 if __name__ == "__main__":
     sys.exit(main())
