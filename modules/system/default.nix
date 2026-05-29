@@ -34,5 +34,8 @@
     };
   };
 
+  # Run unpatched dynamic binaries on NixOS
+  programs.nix-ld.enable = true;
+
   system.stateVersion = "24.11";
 }

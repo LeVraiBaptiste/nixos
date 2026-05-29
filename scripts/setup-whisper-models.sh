@@ -17,6 +17,7 @@ declare -A MODELS=(
     ["large-v1"]="2.9GB - Highest accuracy, very slow"
     ["large-v2"]="2.9GB - Latest large model"
     ["large-v3"]="2.9GB - Most recent large model"
+    ["large-v3-turbo"]="1.6GB - Near large-v3 quality, medium size"
 )
 
 echo "Available Whisper models:"

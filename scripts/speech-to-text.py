@@ -13,14 +13,23 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 # Configuration
-WHISPER_SERVER_URL = "http://127.0.0.1:8080/inference"
+WHISPER_LOCAL_URL = "http://127.0.0.1:8080/inference"
 WHISPER_TIMEOUT = 120
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_LOCAL_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "gemma4:e4b"
 OLLAMA_TIMEOUT = 120
 
+# Remote desktop for GPU-accelerated transcription (set via env)
+WHISPER_REMOTE_HOST = os.environ.get("WHISPER_REMOTE_HOST", "")
+WHISPER_REMOTE_PORT = os.environ.get("WHISPER_REMOTE_PORT", "8080")
+OLLAMA_REMOTE_PORT = os.environ.get("OLLAMA_REMOTE_PORT", "11434")
+
+# Resolved server URLs (set by resolve_servers())
+_resolved = None
+
 AUDIO_FILE = "/tmp/speech_recording.wav"
 RECORDING_PID_FILE = "/tmp/speech_recording.pid"
+MEDIA_WAS_PLAYING_FILE = "/tmp/speech_media_was_playing"
 MODE_FILE = "/tmp/speech_recording.mode"
 DEBUG_LOG = "/tmp/speech_debug.log"
 SEGMENT_PREFIX = "/tmp/speech_segment_"
@@ -61,6 +70,67 @@ def show_notification(message, urgency="normal"):
             debug_log(f"notify-send failed: {result.stderr}")
     except Exception as e:
         debug_log(f"Notification failed: {e}")
+
+
+# --- Media pause/resume ---
+
+def pause_media():
+    """Pause any playing media via playerctl and remember it was playing."""
+    try:
+        result = subprocess.run(
+            ["playerctl", "status"],
+            capture_output=True, text=True, timeout=2
+        )
+        if result.returncode == 0 and result.stdout.strip() == "Playing":
+            subprocess.run(["playerctl", "pause"], timeout=2, check=False)
+            with open(MEDIA_WAS_PLAYING_FILE, 'w') as f:
+                f.write("1")
+            debug_log("Paused playing media")
+        else:
+            debug_log("No media playing, nothing to pause")
+    except Exception as e:
+        debug_log(f"Failed to pause media: {e}")
+
+
+def resume_media():
+    """Resume media if it was paused by us."""
+    try:
+        if os.path.exists(MEDIA_WAS_PLAYING_FILE):
+            os.remove(MEDIA_WAS_PLAYING_FILE)
+            subprocess.run(["playerctl", "play"], timeout=2, check=False)
+            debug_log("Resumed media playback")
+    except Exception as e:
+        debug_log(f"Failed to resume media: {e}")
+
+
+# --- Server resolution ---
+
+def resolve_servers():
+    """Determine which servers to use: remote GPU desktop or local CPU fallback."""
+    global _resolved
+    if _resolved is not None:
+        return _resolved
+
+    whisper_url = WHISPER_LOCAL_URL
+    ollama_url = OLLAMA_LOCAL_URL
+    remote = False
+
+    if WHISPER_REMOTE_HOST:
+        try:
+            req = Request(
+                f"http://{WHISPER_REMOTE_HOST}:{WHISPER_REMOTE_PORT}/",
+                method="GET",
+            )
+            urlopen(req, timeout=1)
+            whisper_url = f"http://{WHISPER_REMOTE_HOST}:{WHISPER_REMOTE_PORT}/inference"
+            ollama_url = f"http://{WHISPER_REMOTE_HOST}:{OLLAMA_REMOTE_PORT}/api/generate"
+            remote = True
+            debug_log(f"Remote desktop available at {WHISPER_REMOTE_HOST}")
+        except Exception:
+            debug_log(f"Remote desktop {WHISPER_REMOTE_HOST} unavailable, using local CPU")
+
+    _resolved = (whisper_url, ollama_url, remote)
+    return _resolved
 
 
 # --- Mode persistence ---
@@ -108,6 +178,8 @@ def start_recording(mode):
         for f in [AUDIO_FILE, RECORDING_PID_FILE, MODE_FILE]:
             if os.path.exists(f):
                 os.remove(f)
+
+        pause_media()
 
         mode_label = "LLM" if mode == "llm" else "Raw"
         show_notification(f"🎤 Recording ({mode_label})... Press shortcut to stop")
@@ -241,7 +313,8 @@ def split_audio_segments(filepath, split_points, duration):
 
 def transcribe_audio(filepath):
     """Transcribe a single audio file via whisper-server HTTP API"""
-    debug_log(f"Transcribing {filepath}...")
+    whisper_url, _, _ = resolve_servers()
+    debug_log(f"Transcribing {filepath} via {whisper_url}...")
 
     try:
         boundary = uuid.uuid4().hex
@@ -278,7 +351,7 @@ def transcribe_audio(filepath):
                 body += part
 
         req = Request(
-            WHISPER_SERVER_URL,
+            whisper_url,
             data=body,
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
             method="POST",
@@ -325,7 +398,8 @@ def load_llm_prompt():
 
 def llm_cleanup(text):
     """Pass text through Ollama for cleanup. Falls back to raw text on failure."""
-    debug_log(f"Running LLM cleanup on {len(text)} chars...")
+    _, ollama_url, _ = resolve_servers()
+    debug_log(f"Running LLM cleanup on {len(text)} chars via {ollama_url}...")
     system_prompt = load_llm_prompt()
 
     try:
@@ -337,7 +411,7 @@ def llm_cleanup(text):
         }).encode("utf-8")
 
         req = Request(
-            OLLAMA_URL,
+            ollama_url,
             data=payload,
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -531,6 +605,7 @@ def stop_recording():
             debug_log(f"Process {pid} already stopped")
 
         os.remove(RECORDING_PID_FILE)
+        resume_media()
         time.sleep(0.5)
 
         # Validate audio file
@@ -547,7 +622,14 @@ def stop_recording():
             return False
 
         # Pipeline: duration → silence detect → split → transcribe → [llm] → output
-        show_notification("🔄 Processing speech...")
+        _, _, remote = resolve_servers()
+        if remote:
+            backend = "GPU (remote)"
+        elif os.path.exists("/dev/nvidia0"):
+            backend = "GPU (local)"
+        else:
+            backend = "CPU (local)"
+        show_notification(f"🔄 Processing speech... [{backend}]")
         pipeline_start = time.time()
 
         duration = get_audio_duration(AUDIO_FILE)

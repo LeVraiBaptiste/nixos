@@ -35,6 +35,7 @@ in
     libnotify
     pulseaudio
     curl
+    playerctl  # pause/resume media during dictation
     dictateScript
     setupModelsScript
     speechToTextScript
@@ -54,13 +55,16 @@ in
     path = [ pkgs.ffmpeg ];
 
     serviceConfig = {
-      ExecStart = "${whisperCuda}/bin/whisper-server --model ${activeModelLink} --host 127.0.0.1 --port 8080 --convert -l fr --beam-size 5 --best-of 5";
+      ExecStart = "${whisperCuda}/bin/whisper-server --model ${activeModelLink} --host 0.0.0.0 --port 8080 --convert -l fr --beam-size 5 --best-of 5";
       Restart = "on-failure";
       RestartSec = 5;
       ConditionPathExists = activeModelLink;
       SupplementaryGroups = [ "video" "render" ];
     };
   };
+
+  # Open whisper-server port for LAN access
+  networking.firewall.allowedTCPPorts = [ 8080 ];
 
   # Create models directory and default symlink
   system.activationScripts.whisperModels = {

@@ -15,7 +15,11 @@
     ../modules/zen-browser.nix
     ../modules/steam.nix
     ../modules/system/virt/docker.nix
+    ../modules/dictation-client.nix
   ];
+
+  # Remote desktop for GPU-accelerated dictation
+  services.dictation-client.remoteHost = "desktop.local.com";
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 

@@ -33,6 +33,7 @@
       rebuild-desktop = "sudo nixos-rebuild switch --flake /etc/nixos#desktop";
       rebuild-laptop = "sudo nixos-rebuild switch --flake /etc/nixos#laptop";
       rebuild-server = "sudo nixos-rebuild switch --flake ~/Documents/self/homelab#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password";
+      rebuild-remote = "sudo nixos-rebuild switch --flake ~/Documents/self/homelab#remote --target-host bat@REDACTED --sudo --ask-sudo-password";
       ll = "ls -la";
       docs = "cd ~/Documents";
       work = "cd ~/Documents/work && . .folderSelect.sh";
