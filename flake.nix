@@ -18,9 +18,14 @@
       url = "github:LeVraiBaptiste/claude-foreman";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    paseo = {
+      url = "github:getpaseo/paseo";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, zen-browser, claude-foreman, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, zen-browser, claude-foreman, paseo, ... }:
     let
       system = "x86_64-linux";
 
@@ -42,6 +47,7 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/desktop.nix
+          paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;
@@ -55,6 +61,7 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/laptop.nix
+          paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;

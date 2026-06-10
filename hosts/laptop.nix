@@ -16,7 +16,11 @@
     ../modules/steam.nix
     ../modules/system/virt/docker.nix
     ../modules/dictation-client.nix
+    ../modules/paseo.nix
   ];
+
+  # Paseo: client only (connects to desktop daemon)
+  paseo.enableDesktop = true;
 
   # Remote desktop for GPU-accelerated dictation
   services.dictation-client.remoteHost = "desktop.local.com";

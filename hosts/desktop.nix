@@ -18,8 +18,15 @@
     ../modules/system/virt/docker.nix
     ../modules/dictation.nix
     ../modules/ollama.nix
+    ../modules/obs.nix
+    ../modules/davinci-resolve.nix
     ../modules/system/ssh.nix
+    ../modules/paseo.nix
   ];
+
+  # Paseo: daemon + desktop app
+  paseo.enableDaemon = true;
+  paseo.enableDesktop = true;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
