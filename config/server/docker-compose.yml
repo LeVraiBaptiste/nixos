@@ -1,0 +1,41 @@
+name: server
+
+services:
+  home-assistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    network_mode: host
+    volumes:
+      - /srv/hass/config:/config
+    environment:
+      TZ: Europe/Paris
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/caddy/data:/data
+    restart: unless-stopped
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    volumes:
+      - /srv/jellyfin/config:/config
+      - /srv/media:/media
+    environment:
+      TZ: Europe/Paris
+    restart: unless-stopped
+
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    volumes:
+      - /srv/filebrowser/data:/srv
+      - /srv/filebrowser/database:/database
+      - /srv/filebrowser/config:/config
+    environment:
+      TZ: Europe/Paris
+    restart: unless-stopped

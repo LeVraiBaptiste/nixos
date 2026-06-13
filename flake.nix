@@ -1,11 +1,16 @@
 {
-  description = "NixOS configuration";
+  description = "NixOS configuration — desktop, laptop, server, remote";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
       url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    disko = {
+      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -25,7 +30,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, zen-browser, claude-foreman, paseo, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, zen-browser, claude-foreman, paseo, ... }:
     let
       system = "x86_64-linux";
 
@@ -46,7 +51,7 @@
         inherit system;
         specialArgs = sharedSpecialArgs;
         modules = [
-          ./hosts/desktop.nix
+          ./hosts/desktop
           paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
@@ -60,13 +65,28 @@
         inherit system;
         specialArgs = sharedSpecialArgs;
         modules = [
-          ./hosts/laptop.nix
+          ./hosts/laptop
           paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;
             home-manager.useGlobalPkgs = true;
           }
+        ];
+      };
+
+      nixosConfigurations.server = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          ./hosts/server
+        ];
+      };
+
+      nixosConfigurations.remote = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          disko.nixosModules.disko
+          ./hosts/remote
         ];
       };
     };
