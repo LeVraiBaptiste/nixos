@@ -24,13 +24,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    paseo = {
-      url = "github:getpaseo/paseo";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+};
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, zen-browser, claude-foreman, paseo, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, zen-browser, claude-foreman, ... }:
     let
       system = "x86_64-linux";
 
@@ -52,7 +48,6 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/desktop
-          paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;
@@ -66,7 +61,6 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/laptop
-          paseo.nixosModules.default
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;

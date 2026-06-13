@@ -25,7 +25,6 @@
     ../../modules/nixos/brave.nix
     ../../modules/nixos/zen-browser.nix
     ../../modules/nixos/davinci-resolve.nix
-    ../../modules/nixos/paseo.nix
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
     ../../modules/nixos/qbittorrent.nix
@@ -44,10 +43,6 @@
     ../../modules/home/messaging.nix
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
-
-  # Paseo: daemon + desktop app
-  paseo.enableDaemon = true;
-  paseo.enableDesktop = true;
 
   # GNOME Desktop Environment
   services.xserver.enable = true;

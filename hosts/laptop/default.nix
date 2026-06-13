@@ -18,7 +18,6 @@
     ../../modules/nixos/steam.nix
     ../../modules/nixos/brave.nix
     ../../modules/nixos/zen-browser.nix
-    ../../modules/nixos/paseo.nix
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
     ../../modules/nixos/qbittorrent.nix
@@ -37,9 +36,6 @@
     ../../modules/home/messaging.nix
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
-
-  # Paseo: client only (connects to desktop daemon)
-  paseo.enableDesktop = true;
 
   # Remote desktop for GPU-accelerated dictation
   services.dictation-client.remoteHost = "desktop.local.com";
