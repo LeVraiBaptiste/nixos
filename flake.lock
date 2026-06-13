@@ -95,33 +95,12 @@
         "type": "github"
       }
     },
-    "paseo": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1781088433,
-        "narHash": "sha256-7D8xouw0YLF5esJ023BRvgsjJqhQw+kCpdcvbwDrCDM=",
-        "owner": "getpaseo",
-        "repo": "paseo",
-        "rev": "6db285b1d999f918c264ff09b3ebd4a07c50ad03",
-        "type": "github"
-      },
-      "original": {
-        "owner": "getpaseo",
-        "repo": "paseo",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "claude-foreman": "claude-foreman",
         "disko": "disko",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
-        "paseo": "paseo",
         "zen-browser": "zen-browser"
       }
     },

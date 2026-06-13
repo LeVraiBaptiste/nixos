@@ -79,8 +79,8 @@
       nixosConfigurations.remote = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
-          disko.nixosModules.disko
           ./hosts/remote
+          disko.nixosModules.disko
         ];
       };
     };

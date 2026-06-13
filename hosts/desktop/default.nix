@@ -1,6 +1,18 @@
 { config, pkgs, ... }:
 
 {
+  networking.hostName = "desktop";
+
+  # Wake-on-LAN support
+  networking.networkmanager.ensureProfiles.profiles.wired = {
+    connection = {
+      id = "wired";
+      type = "ethernet";
+      interface-name = "enp12s0";
+    };
+    ethernet.wake-on-lan = "1";
+    ipv4.method = "auto";
+  };
   imports = [
     ./hardware-configuration.nix
 
@@ -30,6 +42,7 @@
     ../../modules/nixos/qbittorrent.nix
 
     # Home
+    ../../modules/home/ssh.nix
     ../../modules/home/git.nix
     ../../modules/home/locale.nix
     ../../modules/home/fish.nix

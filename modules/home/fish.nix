@@ -30,10 +30,7 @@
     shellAliases = {
       gtnix = "cd /etc/nixos && . .folderSelect.sh";
       update = "sudo nix flake update --flake /etc/nixos";
-      rebuild-desktop = "sudo nixos-rebuild switch --flake /etc/nixos#desktop";
-      rebuild-laptop = "sudo nixos-rebuild switch --flake /etc/nixos#laptop";
-      rebuild-server = "sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password";
-      rebuild-remote = "sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@REDACTED --sudo --ask-sudo-password";
+      rebuild = "/etc/nixos/scripts/rebuild.sh";
       ll = "ls -la";
       docs = "cd ~/Documents";
       work = "cd ~/Documents/work && . .folderSelect.sh";
@@ -44,6 +41,7 @@
       fg = "fzf --ansi --disabled --bind 'start:reload:echo Type to search...' --bind 'change:reload:rg --line-number --color=always -- {q} || true' --delimiter ':' --preview 'bat --color=always --style=numbers --highlight-line {2} {1}' --preview-window '+{2}-5' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro +{2} {1}]'";
       t = "tmux attach || tmux";
       ssh-desktop = "tmux detach-client -E 'ssh bat@desktop.local.com -t tmux new-session -A -s default'";
+      wake-desktop = "wol 34:5a:60:19:2a:a7";
     };
   };
 

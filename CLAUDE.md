@@ -4,35 +4,40 @@
 
 - `sudo nixos-rebuild switch --flake /etc/nixos#desktop` - Rebuild and apply desktop configuration
 - `sudo nixos-rebuild switch --flake /etc/nixos#laptop` - Rebuild and apply laptop configuration
-- `cd /etc/nixos && code .` - Open NixOS config in VS Code
+- `sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password` - Deploy server configuration
+- `sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-sudo-password` - Deploy remote configuration
 
 ## Code Style Guidelines
 
 - **Nix Formatting**: Use 2-space indentation in .nix files
-- **Imports**: Group imports at the top of files by category (system, home, dev)
+- **Imports**: Group imports at the top of files by category (nixos, home)
 - **Naming Conventions**: Use kebab-case for module names and camelCase for variables
 - **Comments**: Comment complex configurations and provide explanations for non-obvious settings
 - **Error Handling**: Use `lib.mkDefault` to establish fallback values for settings
 
 ## Project Structure
 
-- `flake.nix` - Flake entry point with `desktop` and `laptop` configurations (nixos-unstable, home-manager)
-- `hosts/` - Host-specific configurations
-    - `desktop.nix` - Desktop: nvidia, steam, dictation, all modules
-    - `laptop.nix` - Laptop: lighter config (no nvidia, steam, or dictation)
-    - `hardware-configuration.nix` - Desktop/laptop hardware config
+- `flake.nix` - Flake entry point with `desktop`, `laptop`, `server`, and `remote` configurations (nixpkgs unstable, home-manager, disko, zen-browser, claude-foreman)
+- `hosts/` - Host-specific configurations (each host is a directory with `default.nix` + `hardware-configuration.nix`)
+    - `desktop/` - Desktop: nvidia, steam, dictation, obs, davinci-resolve, all modules
+    - `laptop/` - Laptop: lighter config (no nvidia, steam, or dictation)
+    - `server/` - Home server (Dell T330): docker-compose services (Home Assistant, Jellyfin, WireGuard)
+    - `remote/` - Public-facing gateway: docker-compose services (WireGuard, Caddy), uses disko for disk management
 - `modules/` - Modular components:
-    - `system/` - Core system config (boot, network, bluetooth, GNOME extensions, audio, printing, user)
-        - `nvidia.nix` - NVIDIA drivers (desktop-only, imported by host)
-        - `virt/docker.nix` - Docker virtualization (imported by hosts)
-    - `home/` - Home-manager config (locals, Fish shell, dconf, packages)
-    - `dev/` - Dev tools (languages, editors, claude-code), terminal (kitty), Mattermost, VPN
-    - `brave.nix`, `steam.nix`, `dictation.nix` - Standalone app modules
-- `scripts/` - Shell/Python scripts for dictation and whisper speech-to-text
-- `models/` - Whisper model files (ggml-base, ggml-medium)
+    - `nixos/` - System-level NixOS modules (boot, network, bluetooth, gnome, audio, printing, nvidia, docker, ssh, steam, brave, dictation, obs, ollama, etc.)
+    - `home/` - Home-manager modules (git, fish, dev tools, claude-code, ghostty, kitty, neovim, tmux, lazygit, messaging, vpn, locale)
+- `config/` - Dotfiles and service configs
+    - `nvim/` - Neovim configuration (NvChad-based)
+    - `ghostty.conf`, `kitty.conf`, `lazygit.yml`, `tmux.conf` - Terminal/tool configs
+    - `server/` - Server docker-compose and Caddyfile
+    - `remote/` - Remote docker-compose and Caddyfile
+- `scripts/` - Shell/Python scripts (dictation, whisper speech-to-text, HA config backup, IPMI fan control)
+- `models/` - Whisper model files (ggml-base, ggml-medium, ggml-large-v3-turbo)
+- `overlays/` - Nix overlays (claude-code)
+- `docs/` - Documentation (architecture, wireguard setup)
 
 ## Environment
 
 - Default shell: Fish with custom aliases and plugins
 - System packages managed via environment.systemPackages
-- Home configuration managed with home-manager
+- Home configuration managed with home-manager (desktop and laptop only)

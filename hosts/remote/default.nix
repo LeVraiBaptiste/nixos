@@ -11,9 +11,29 @@
     ../../modules/nixos/docker-compose.nix
   ];
 
-  # UEFI boot
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # GRUB UEFI boot (OVH firmware doesn't reliably find systemd-boot)
+  boot.loader.systemd-boot.enable = false;
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    device = "nodev";
+    efiInstallAsRemovable = true;
+  };
+  boot.loader.efi.canTouchEfiVariables = false;
+
+  # OVH firmware looks for \efi\debian\grubx64.efi — copy GRUB there after each rebuild
+  systemd.services.ovh-grub-compat = {
+    description = "Copy GRUB to OVH-expected EFI path";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      mkdir -p /boot/EFI/debian
+      cp /boot/EFI/BOOT/BOOTX64.EFI /boot/EFI/debian/grubx64.efi
+    '';
+  };
+
+  # Serial console for IPMI/SoL
+  boot.kernelParams = [ "console=tty0" "console=ttyS0,115200n8" ];
 
   networking.hostName = "remote";
 
@@ -21,6 +41,8 @@
   networking.networkmanager.enable = false;
   systemd.network.enable = true;
   networking.useNetworkd = true;
+
+  systemd.network.wait-online.enable = false;
 
   systemd.network.networks."10-wan" = {
     matchConfig.MACAddress = "00:00:00:00:00:00";

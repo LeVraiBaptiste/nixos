@@ -1,6 +1,7 @@
 { config, pkgs, ... }:
 
 {
+  networking.hostName = "laptop";
   imports = [
     ./hardware-configuration.nix
 
@@ -23,6 +24,7 @@
     ../../modules/nixos/qbittorrent.nix
 
     # Home
+    ../../modules/home/ssh.nix
     ../../modules/home/git.nix
     ../../modules/home/locale.nix
     ../../modules/home/fish.nix
@@ -36,6 +38,9 @@
     ../../modules/home/messaging.nix
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
+
+  # Wake-on-LAN tool for powering on the desktop remotely
+  environment.systemPackages = [ pkgs.wol ];
 
   # Remote desktop for GPU-accelerated dictation
   services.dictation-client.remoteHost = "desktop.local.com";
