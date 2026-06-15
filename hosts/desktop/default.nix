@@ -51,7 +51,6 @@
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
     ../../modules/nixos/qbittorrent.nix
-    ../../modules/nixos/sunshine.nix
 
     # Home
     ../../modules/home/ssh.nix
@@ -78,7 +77,7 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" "uinput" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" ];
   };
 
   # Run unpatched dynamic binaries on NixOS

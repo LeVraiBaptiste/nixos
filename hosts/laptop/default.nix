@@ -40,8 +40,8 @@
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
 
-  # Wake-on-LAN, remote desktop client, VPN tools
-  environment.systemPackages = with pkgs; [ wol moonlight-qt wireguard-tools ];
+  # Wake-on-LAN, VPN tools
+  environment.systemPackages = with pkgs; [ wol wireguard-tools ];
 
   # WireGuard — auto-toggle based on network (LAN = off, external = on)
   environment.etc."wireguard/wg0.conf" = {
