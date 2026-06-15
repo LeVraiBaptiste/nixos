@@ -16,7 +16,7 @@
   boot.loader.efi.canTouchEfiVariables = false;
   boot.loader.grub = {
     enable = true;
-    device = "/dev/sdb";
+    device = "/dev/sda";
   };
 
   # Kernel tuning — PCIe power saving, disable NMI watchdog
@@ -159,6 +159,7 @@
     tmux
     ipmitool
     docker-compose
+    wol
   ];
 
   programs.fish.shellAliases = {

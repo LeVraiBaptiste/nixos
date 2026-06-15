@@ -4,14 +4,17 @@
   networking.hostName = "desktop";
 
   # Wake-on-LAN support
-  networking.networkmanager.ensureProfiles.profiles.wired = {
-    connection = {
-      id = "wired";
-      type = "ethernet";
-      interface-name = "enp12s0";
+  networking.interfaces.enp12s0.wakeOnLan.enable = true;
+  systemd.services.wol-enable = {
+    description = "Enable Wake-on-LAN on enp12s0";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.ethtool}/bin/ethtool -s enp12s0 wol g";
+      RemainAfterExit = true;
     };
-    ethernet.wake-on-lan = "1";
-    ipv4.method = "auto";
   };
   imports = [
     ./hardware-configuration.nix
