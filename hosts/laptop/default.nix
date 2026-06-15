@@ -14,6 +14,7 @@
     ../../modules/nixos/audio.nix
     ../../modules/nixos/printing.nix
     ../../modules/nixos/gnome.nix
+    ../../modules/nixos/intel-graphics.nix
     ../../modules/nixos/docker.nix
     ../../modules/nixos/dictation-client.nix
     ../../modules/nixos/steam.nix
