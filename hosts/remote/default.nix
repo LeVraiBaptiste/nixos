@@ -57,17 +57,33 @@
     dns = [ "9.9.9.9" ];
   };
 
-  # WireGuard — VPN server (tunnel to home server)
-  # TODO: uncomment after generating keys on both hosts (see docs/wireguard-setup.md)
-  # networking.wireguard.interfaces.wg0 = {
-  #   ips = [ "10.10.0.1/24" ];
-  #   listenPort = 51820;
-  #   privateKeyFile = "/etc/wireguard/private.key";
-  #   peers = [{
-  #     publicKey = "<server-public-key>";
-  #     allowedIPs = [ "10.10.0.2/32" ];
-  #   }];
-  # };
+  # IP forwarding — relay traffic between WireGuard peers
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
+  # WireGuard — VPN hub (all peers connect here)
+  # TODO: replace <*-public-key> after generating keys (see docs/wireguard-setup.md)
+  networking.wireguard.interfaces.wg0 = {
+    ips = [ "10.10.0.1/24" ];
+    listenPort = 51820;
+    privateKeyFile = "/etc/wireguard/private.key";
+    peers = [
+      {
+        # Server — relay to home LAN
+        publicKey = "REPLACE_WITH_SERVER_PUBLIC_KEY";
+        allowedIPs = [ "10.10.0.2/32" "192.168.1.0/24" ];
+      }
+      {
+        # Laptop
+        publicKey = "REPLACE_WITH_LAPTOP_PUBLIC_KEY";
+        allowedIPs = [ "10.10.0.3/32" ];
+      }
+      {
+        # Phone
+        publicKey = "REPLACE_WITH_PHONE_PUBLIC_KEY";
+        allowedIPs = [ "10.10.0.4/32" ];
+      }
+    ];
+  };
 
   # SSH — key-only auth (internet-facing)
   services.openssh.settings = {

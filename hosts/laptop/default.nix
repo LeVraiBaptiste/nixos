@@ -39,8 +39,19 @@
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
 
-  # Wake-on-LAN tool for powering on the desktop remotely
-  environment.systemPackages = [ pkgs.wol ];
+  # Wake-on-LAN, remote desktop client, VPN tools
+  environment.systemPackages = with pkgs; [ wol moonlight-qt wireguard-tools ];
+
+  # WireGuard — auto-toggle based on network (LAN = off, external = on)
+  environment.etc."wireguard/wg0.conf" = {
+    source = ../../config/laptop/wg0.conf;
+    mode = "0600";
+  };
+
+  networking.networkmanager.dispatcherScripts = [{
+    type = "basic";
+    source = ../../scripts/wg-auto.sh;
+  }];
 
   # Remote desktop for GPU-accelerated dictation
   services.dictation-client.remoteHost = "desktop.local.com";

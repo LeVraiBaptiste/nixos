@@ -3,6 +3,14 @@
 {
   networking.hostName = "desktop";
 
+  # Static IP
+  networking.interfaces.enp12s0.ipv4.addresses = [{
+    address = "192.168.1.10";
+    prefixLength = 24;
+  }];
+  networking.defaultGateway = "192.168.1.1";
+  networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+
   # Wake-on-LAN support
   networking.interfaces.enp12s0.wakeOnLan.enable = true;
   systemd.services.wol-enable = {
@@ -43,6 +51,7 @@
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
     ../../modules/nixos/qbittorrent.nix
+    ../../modules/nixos/sunshine.nix
 
     # Home
     ../../modules/home/ssh.nix
@@ -69,7 +78,7 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" "uinput" ];
   };
 
   # Run unpatched dynamic binaries on NixOS
