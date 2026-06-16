@@ -3,13 +3,28 @@
 {
   networking.hostName = "desktop";
 
-  # Static IP
-  networking.interfaces.enp12s0.ipv4.addresses = [{
-    address = "192.168.1.10";
-    prefixLength = 24;
-  }];
-  networking.defaultGateway = "192.168.1.1";
-  networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+  # Allow access to dev servers from LAN
+  networking.firewall.allowedTCPPorts = [ 3000 ];
+
+  # Static IP via NetworkManager
+  networking.networkmanager.ensureProfiles.profiles.enp12s0-static = {
+    connection = {
+      id = "enp12s0-static";
+      type = "ethernet";
+      interface-name = "enp12s0";
+      autoconnect = "true";
+    };
+    ipv4 = {
+      method = "manual";
+      addresses = "192.168.1.10/24";
+      gateway = "192.168.1.1";
+      dns = "1.1.1.1;8.8.8.8";
+    };
+  };
+
+  # Prevent suspend on idle (keeps SSH sessions alive when no local user is logged in)
+  services.logind.lidSwitchExternalPower = "ignore";
+  services.logind.settings.Login.IdleAction = "ignore";
 
   # Wake-on-LAN support
   networking.interfaces.enp12s0.wakeOnLan.enable = true;
