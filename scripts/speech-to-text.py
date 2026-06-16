@@ -35,7 +35,6 @@ DEBUG_LOG = "/tmp/speech_debug.log"
 SEGMENT_PREFIX = "/tmp/speech_segment_"
 
 DICTATION_DIR = os.path.expanduser("~/dictation")
-LONG_RECORDING_THRESHOLD = 120  # seconds
 
 # Silence detection params
 SILENCE_NOISE_THRESHOLD = "-30dB"
@@ -53,21 +52,41 @@ def debug_log(message):
         print(f"DEBUG: {message}")
 
 
-def show_notification(message, urgency="normal"):
-    """Show desktop notification"""
-    debug_log(f"Showing notification: {message} (urgency: {urgency})")
+def show_notification(message, urgency="normal", timeout_ms=1000):
+    """Show desktop notification and auto-close it after timeout_ms.
+
+    GNOME ignores --expire-time, so we grab the notification ID and
+    close it ourselves via D-Bus after the requested delay.
+    """
+    debug_log(f"Showing notification: {message} (urgency: {urgency}, timeout: {timeout_ms}ms)")
     try:
         result = subprocess.run([
             "notify-send",
             "--urgency", urgency,
             "--app-name", "Speech-to-Text",
-            "--expire-time", "1000",
             "--hint=int:transient:1",
+            "--print-id",
             "Voice Dictation",
             message
         ], check=False, capture_output=True, text=True)
         if result.returncode != 0:
             debug_log(f"notify-send failed: {result.stderr}")
+            return
+
+        nid = result.stdout.strip()
+        if nid:
+            subprocess.Popen(
+                ["bash", "-c",
+                 f"sleep {timeout_ms / 1000:.2f} && "
+                 f"gdbus call --session "
+                 f"--dest org.freedesktop.Notifications "
+                 f"--object-path /org/freedesktop/Notifications "
+                 f"--method org.freedesktop.Notifications.CloseNotification "
+                 f"{nid}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
     except Exception as e:
         debug_log(f"Notification failed: {e}")
 
@@ -210,6 +229,10 @@ def start_recording(mode):
 
         with open(RECORDING_PID_FILE, 'w') as f:
             f.write(str(process.pid))
+
+        # Preload Ollama model into VRAM while user is still speaking
+        if mode == "llm":
+            preload_ollama_model()
 
         debug_log(f"Started recording with PID {process.pid}")
         return True
@@ -396,6 +419,34 @@ def load_llm_prompt():
     return "Clean up this French speech transcription. Fix punctuation, remove filler words and repetitions. Return only the cleaned text."
 
 
+def preload_ollama_model():
+    """Spawn a detached subprocess to load the Ollama model into VRAM.
+
+    Uses a separate process (not a thread) because start_recording exits
+    immediately after launching parec — a daemon thread would be killed
+    before completing the HTTP request.
+    """
+    _, ollama_url, _ = resolve_servers()
+    debug_log(f"Preloading Ollama model via background process ({ollama_url})...")
+    try:
+        subprocess.Popen(
+            [
+                sys.executable, "-c",
+                "import json,sys; from urllib.request import Request,urlopen; "
+                "urlopen(Request(sys.argv[1], data=json.dumps("
+                "{'model':sys.argv[2],'keep_alive':'5m'}).encode(),"
+                "headers={'Content-Type':'application/json'},method='POST'), timeout=60)",
+                ollama_url, OLLAMA_MODEL,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        debug_log("Ollama preload process spawned")
+    except Exception as e:
+        debug_log(f"Ollama model preload failed (non-fatal): {e}")
+
+
 def llm_cleanup(text):
     """Pass text through Ollama for cleanup. Falls back to raw text on failure."""
     _, ollama_url, _ = resolve_servers()
@@ -539,29 +590,15 @@ def inject_text(text):
 
 
 def output_result(text, duration, mode):
-    """Route output: clipboard for short, file for long."""
+    """Output text via clipboard paste."""
     mode_label = "LLM" if mode == "llm" else "Raw"
 
-    if duration < LONG_RECORDING_THRESHOLD:
-        # Short: paste to clipboard
-        debug_log(f"Short recording ({duration:.0f}s), pasting to clipboard")
-        time.sleep(0.1)
-        if inject_text(text):
-            show_notification(f"✅ ({mode_label}) {text[:60]}{'...' if len(text) > 60 else ''}")
-            return True
-        else:
-            return False
-    else:
-        # Long: save to file
-        debug_log(f"Long recording ({duration:.0f}s), saving to file")
-        os.makedirs(DICTATION_DIR, exist_ok=True)
-        filename = datetime.now().strftime("%Y-%m-%d_%H-%M") + f"_{mode}.txt"
-        filepath = os.path.join(DICTATION_DIR, filename)
-        with open(filepath, 'w') as f:
-            f.write(text)
-        debug_log(f"Saved to {filepath}")
-        show_notification(f"📄 ({mode_label}) Saved to ~/dictation/{filename}")
+    debug_log(f"Recording ({duration:.0f}s), pasting to clipboard")
+    if inject_text(text):
+        show_notification(f"✅ ({mode_label}) {text[:60]}{'...' if len(text) > 60 else ''}")
         return True
+    else:
+        return False
 
 
 # --- Main pipeline ---
