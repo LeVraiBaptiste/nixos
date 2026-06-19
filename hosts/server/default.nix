@@ -64,12 +64,11 @@
   };
 
   # WireGuard — VPN client (tunnel to remote hub)
-  # TODO: replace REPLACE_WITH_REMOTE_PUBLIC_KEY after generating keys (see docs/wireguard-setup.md)
   networking.wireguard.interfaces.wg0 = {
     ips = [ "10.10.0.3/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
     peers = [{
-      publicKey = "REPLACE_WITH_REMOTE_PUBLIC_KEY";
+      publicKey = "ejj87LpGCf9mrplg7Cg7kiEqRz8Zf55Ub5X2IZh44Aw=";
       endpoint = "203.0.113.10:51820";
       allowedIPs = [ "10.10.0.0/24" ];
       persistentKeepalive = 25;

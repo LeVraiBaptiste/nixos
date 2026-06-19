@@ -44,6 +44,9 @@
 
   systemd.network.wait-online.enable = false;
 
+  # Workaround: systemd 260+ networkd fails with exit 243/CREDENTIALS on restart
+  systemd.services.systemd-networkd.serviceConfig.LoadCredential = lib.mkForce [];
+
   systemd.network.networks."10-wan" = {
     matchConfig.MACAddress = "00:00:00:00:00:00";
     address = [
@@ -60,24 +63,38 @@
   # IP forwarding — relay traffic between WireGuard peers
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
+  # WireGuard — key readable by systemd-networkd
+  systemd.tmpfiles.rules = [
+    "z /etc/wireguard/private.key 0640 root systemd-network -"
+  ];
+
   # WireGuard — VPN hub (Desktop + Server connect here)
-  # TODO: replace public key placeholders after generating keys (see docs/wireguard-setup.md)
-  networking.wireguard.interfaces.wg0 = {
-    ips = [ "10.10.0.1/24" ];
-    listenPort = 51820;
-    privateKeyFile = "/etc/wireguard/private.key";
-    peers = [
+  systemd.network.netdevs."10-wg0" = {
+    netdevConfig = {
+      Name = "wg0";
+      Kind = "wireguard";
+    };
+    wireguardConfig = {
+      ListenPort = 51820;
+      PrivateKeyFile = "/etc/wireguard/private.key";
+    };
+    wireguardPeers = [
       {
         # Desktop
-        publicKey = "REPLACE_WITH_DESKTOP_PUBLIC_KEY";
-        allowedIPs = [ "10.10.0.2/32" ];
+        PublicKey = "GXChVAAGz8hbAO4wV7MxjGL73NVnH0lfdIGBJ4tmfV4=";
+        AllowedIPs = [ "10.10.0.2/32" ];
       }
       {
         # Server
-        publicKey = "REPLACE_WITH_SERVER_PUBLIC_KEY";
-        allowedIPs = [ "10.10.0.3/32" ];
+        PublicKey = "EWAOo1afS+rx6V1+Y/Tipv0xwn+X3miPQP6rjrkrC3I=";
+        AllowedIPs = [ "10.10.0.3/32" ];
       }
     ];
+  };
+
+  systemd.network.networks."50-wg0" = {
+    matchConfig.Name = "wg0";
+    address = [ "10.10.0.1/24" ];
   };
 
   # SSH — key-only auth (internet-facing)
@@ -148,6 +165,9 @@
 
     # Terminal compatibility
     kitty.terminfo
+
+    # Networking
+    wireguard-tools
 
     # CLI tools
     fzf

@@ -10,5 +10,6 @@ if [ "$TARGET" = "$HOSTNAME" ]; then
 else
   nixos-rebuild switch --flake "$FLAKE#$TARGET" \
     --target-host "$TARGET" \
-    --elevate=sudo
+    --elevate=sudo \
+    --ask-elevate-password
 fi

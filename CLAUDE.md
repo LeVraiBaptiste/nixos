@@ -4,8 +4,8 @@
 
 - `sudo nixos-rebuild switch --flake /etc/nixos#desktop` - Rebuild and apply desktop configuration
 - `sudo nixos-rebuild switch --flake /etc/nixos#laptop` - Rebuild and apply laptop configuration
-- `sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password` - Deploy server configuration
-- `sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-sudo-password` - Deploy remote configuration
+- `sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-elevate-password` - Deploy server configuration
+- `sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-elevate-password` - Deploy remote configuration
 
 ## Code Style Guidelines
 

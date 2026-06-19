@@ -31,6 +31,7 @@
       gtnix = "cd /etc/nixos && . .folderSelect.sh";
       update = "sudo nix flake update --flake /etc/nixos";
       rebuild = "/etc/nixos/scripts/rebuild.sh";
+      rebuild-all = "/etc/nixos/scripts/rebuild-all.sh";
       ll = "ls -la";
       docs = "cd ~/Documents";
       work = "cd ~/Documents/work && . .folderSelect.sh";
