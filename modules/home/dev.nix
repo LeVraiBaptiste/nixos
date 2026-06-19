@@ -17,7 +17,11 @@
     jq
     ffmpeg
     kubernetes-helm
+    google-cloud-sdk
     mongodb-compass
+    openssl
+    firebase-tools
+    terraform
 
     # Editors
     vscode
