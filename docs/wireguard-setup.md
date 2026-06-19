@@ -5,39 +5,27 @@ Manual steps required after deploying the NixOS configs.
 ## Topology
 
 ```
-         Remote (203.0.113.10)
-         WG hub (10.10.0.1:51820)
-         ip_forward=1
-        ╱       │        ╲
-  Laptop      Server      Phone
-  10.10.0.3   10.10.0.2   10.10.0.4
-              │
-              │ LAN masquerade
-              │
-           Desktop (192.168.1.10)
-           Sunshine
+            Remote (203.0.113.10)
+            Hub WireGuard (10.10.0.1:51820)
+            ip_forward=1
+              │         │
+           Desktop    Server
+           10.10.0.2   10.10.0.3
 ```
 
-- **Remote**: WireGuard hub, routes traffic between peers
-- **Server**: always-on WG client, relays traffic to home LAN via masquerade
-- **Laptop**: WG client, auto-toggles based on network (LAN = off, external = on)
-- **Phone**: WG client via Android app, manual toggle
-- **Desktop**: no WireGuard — accessed directly on LAN or via Server masquerade
+- **Remote**: WireGuard hub with public IP, routes traffic between peers
+- **Desktop**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
+- **Server**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
+- **Laptop/Phone**: no WireGuard — access services via SSH ProxyJump or HTTPS (Caddy on Remote)
 
 ## 1. Generate keys
 
-On **each host** (remote, server, laptop):
+On **each host** (remote, server, desktop):
 
 ```bash
 sudo mkdir -p /etc/wireguard
 wg genkey | sudo tee /etc/wireguard/private.key | wg pubkey | sudo tee /etc/wireguard/public.key
 sudo chmod 600 /etc/wireguard/private.key
-```
-
-For the **phone**, generate keys on any machine:
-
-```bash
-wg genkey | tee phone-private.key | wg pubkey > phone-public.key
 ```
 
 ## 2. Exchange public keys
@@ -46,97 +34,102 @@ Insert each host's public key into the NixOS configs:
 
 | Key from | Insert into | Placeholder |
 |----------|-------------|-------------|
-| `server` | `hosts/remote/default.nix` | `<server-public-key>` |
-| `laptop` | `hosts/remote/default.nix` | `<laptop-public-key>` |
-| `phone` | `hosts/remote/default.nix` | `<phone-public-key>` |
-| `remote` | `hosts/server/default.nix` | `<remote-public-key>` |
-| `remote` | `config/laptop/wg0.conf` | `<remote-public-key>` |
+| `desktop` | `hosts/remote/default.nix` | `REPLACE_WITH_DESKTOP_PUBLIC_KEY` |
+| `server` | `hosts/remote/default.nix` | `REPLACE_WITH_SERVER_PUBLIC_KEY` |
+| `remote` | `hosts/desktop/default.nix` | `REPLACE_WITH_REMOTE_PUBLIC_KEY` |
+| `remote` | `hosts/server/default.nix` | `REPLACE_WITH_REMOTE_PUBLIC_KEY` |
 
-Also insert the laptop's private key into `config/laptop/wg0.conf` (replace `<contenu de /etc/wireguard/private.key>`).
+## 3. Deploy
 
-## 3. Verify server LAN interface name
-
-On the **server**, check the network interface name:
+Order matters to minimize downtime:
 
 ```bash
-ip link
-```
+# 1. Desktop first (adds WG, harmless — Remote doesn't know it yet)
+sudo nixos-rebuild switch --flake /etc/nixos#desktop
 
-Update `networking.nat.externalInterface` in `hosts/server/default.nix` if it differs from `eno1`.
-
-## 4. Deploy
-
-```bash
-# From desktop
+# 2. Remote second (updates peer list — Server tunnel breaks momentarily)
 sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-sudo-password
+
+# 3. Server third (from LAN — Server moves to .3, tunnel re-establishes)
 sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password
+
+# 4. Laptop last (removes WG config, purely subtractive)
 sudo nixos-rebuild switch --flake /etc/nixos#laptop
 ```
 
-## 5. Verify tunnel
+## 4. Verify tunnel
 
 From **remote**:
 
 ```bash
-sudo wg show        # should list all 3 peers
-ping 10.10.0.2      # reaches server through tunnel
+sudo wg show        # should list 2 peers (Desktop, Server)
+ping 10.10.0.2      # reaches desktop
+ping 10.10.0.3      # reaches server
+```
+
+From **desktop**:
+
+```bash
+sudo wg show
+ping 10.10.0.1      # reaches remote
+ping 10.10.0.3      # reaches server via remote
 ```
 
 From **server**:
 
 ```bash
 sudo wg show
-ping 10.10.0.1      # reaches remote through tunnel
+ping 10.10.0.1      # reaches remote
+ping 10.10.0.2      # reaches desktop via remote
 ```
 
-From **laptop** (on external network):
+## 5. Verify Caddy
 
 ```bash
-sudo wg show         # should show active tunnel (auto-enabled by dispatcher)
-ping 10.10.0.1       # reaches remote
-ping 192.168.1.10    # reaches desktop via server masquerade
+curl http://203.0.113.10    # should return HA login page (proxied to 10.10.0.3:8123)
 ```
 
-## 6. Phone setup (Android)
+## 6. SSH access from Laptop/Phone
 
-Create the WireGuard config file for the phone:
-
-```ini
-[Interface]
-Address = 10.10.0.4/24
-PrivateKey = <phone-private-key>
-DNS = 1.1.1.1
-
-[Peer]
-PublicKey = <remote-public-key>
-Endpoint = 203.0.113.10:51820
-AllowedIPs = 10.10.0.0/24, 192.168.1.0/24
-PersistentKeepalive = 25
-```
-
-Export as QR code (requires `qrencode`):
+No WireGuard needed — use SSH ProxyJump through Remote:
 
 ```bash
-qrencode -t ansiutf8 < phone-wg.conf
+# Direct jump
+ssh -J bat@203.0.113.10 bat@10.10.0.2    # → Desktop
+ssh -J bat@203.0.113.10 bat@10.10.0.3    # → Server
 ```
 
-Scan the QR code in the WireGuard Android app.
+Or add to `~/.ssh/config`:
 
-## 7. Verify Caddy
+```
+Host remote
+  HostName 203.0.113.10
+  User bat
 
-From **remote** (or any machine):
+Host desktop
+  HostName 10.10.0.2
+  User bat
+  ProxyJump remote
+
+Host server
+  HostName 10.10.0.3
+  User bat
+  ProxyJump remote
+```
+
+## 7. Wake-on-LAN
+
+Desktop can be woken via Server (always on, same LAN):
 
 ```bash
-curl http://203.0.113.10
+ssh server "wol <desktop-mac-address>"
 ```
-
-Should return the Home Assistant login page (proxied through the tunnel to `10.10.0.2:8123`).
 
 ## 8. Split DNS (manual, outside NixOS)
 
-For `desktop.url.com` to resolve correctly everywhere:
+For services to resolve correctly everywhere:
 
-1. **DNS public** (registrar/Cloudflare): `desktop.url.com A 203.0.113.10`
-2. **DNS local** (router host override): `desktop.url.com → 192.168.1.10`
+1. **DNS public** (registrar/Cloudflare): `ha.yourdomain.com A 203.0.113.10`
+2. **DNS local** (router host override): `ha.yourdomain.com → 192.168.1.62`
 
-In LAN, the router resolves to the desktop directly. Externally, it resolves to the remote (requires WireGuard active to reach the desktop through the tunnel).
+On LAN, traffic goes directly to Server. Externally, it goes through Remote's Caddy → WG tunnel → Server.

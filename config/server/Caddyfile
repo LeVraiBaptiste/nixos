@@ -1,11 +1,11 @@
 http://ha.server.com {
-  reverse_proxy host.docker.internal:8123
+  reverse_proxy localhost:8123
 }
 
 http://jf.server.com {
-  reverse_proxy jellyfin:8096
+  reverse_proxy localhost:8096
 }
 
 http://fb.server.com {
-  reverse_proxy filebrowser:80
+  reverse_proxy localhost:80
 }

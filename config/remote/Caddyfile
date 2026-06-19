@@ -1,5 +1,5 @@
 # Placeholder — update with your domain once DNS is ready
-# e.g. ha.yourdomain.com { reverse_proxy 10.10.0.2:8123 }
+# e.g. ha.yourdomain.com { reverse_proxy 10.10.0.3:8123 }
 :80 {
-  reverse_proxy 10.10.0.2:8123
+  reverse_proxy 10.10.0.3:8123
 }

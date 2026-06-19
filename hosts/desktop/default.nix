@@ -22,6 +22,19 @@
     };
   };
 
+  # WireGuard — VPN client (tunnel to remote hub)
+  # TODO: replace REPLACE_WITH_REMOTE_PUBLIC_KEY after generating keys (see docs/wireguard-setup.md)
+  networking.wireguard.interfaces.wg0 = {
+    ips = [ "10.10.0.2/24" ];
+    privateKeyFile = "/etc/wireguard/private.key";
+    peers = [{
+      publicKey = "REPLACE_WITH_REMOTE_PUBLIC_KEY";
+      endpoint = "203.0.113.10:51820";
+      allowedIPs = [ "10.10.0.0/24" ];
+      persistentKeepalive = 25;
+    }];
+  };
+
   # Prevent suspend on idle (keeps SSH sessions alive when no local user is logged in)
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.settings.Login.IdleAction = "ignore";

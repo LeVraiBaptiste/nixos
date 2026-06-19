@@ -24,7 +24,6 @@
   boot.kernel.sysctl = {
     "kernel.nmi_watchdog" = 0;
     "vm.dirty_writeback_centisecs" = 1500;
-    "net.ipv4.ip_forward" = 1;
   };
 
   # CPU governor — bias toward lower frequencies
@@ -67,7 +66,7 @@
   # WireGuard — VPN client (tunnel to remote hub)
   # TODO: replace REPLACE_WITH_REMOTE_PUBLIC_KEY after generating keys (see docs/wireguard-setup.md)
   networking.wireguard.interfaces.wg0 = {
-    ips = [ "10.10.0.2/24" ];
+    ips = [ "10.10.0.3/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
     peers = [{
       publicKey = "REPLACE_WITH_REMOTE_PUBLIC_KEY";
@@ -75,13 +74,6 @@
       allowedIPs = [ "10.10.0.0/24" ];
       persistentKeepalive = 25;
     }];
-  };
-
-  # Masquerade WG traffic to LAN so Desktop can respond via Server
-  networking.nat = {
-    enable = true;
-    externalInterface = "eno1"; # TODO: verify with `ip link` on server
-    internalInterfaces = [ "wg0" ];
   };
 
   # Filebrowser directories
@@ -111,9 +103,6 @@
     description = "bat";
     shell = pkgs.bash;
     extraGroups = [ "networkmanager" "wheel" "docker" ];
-    openssh.authorizedKeys.keys = [
-      # TODO: Add SSH public key(s) here
-    ];
   };
 
   # Fish shell + starship for server

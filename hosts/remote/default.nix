@@ -60,27 +60,22 @@
   # IP forwarding — relay traffic between WireGuard peers
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
-  # WireGuard — VPN hub (all peers connect here)
-  # TODO: replace <*-public-key> after generating keys (see docs/wireguard-setup.md)
+  # WireGuard — VPN hub (Desktop + Server connect here)
+  # TODO: replace public key placeholders after generating keys (see docs/wireguard-setup.md)
   networking.wireguard.interfaces.wg0 = {
     ips = [ "10.10.0.1/24" ];
     listenPort = 51820;
     privateKeyFile = "/etc/wireguard/private.key";
     peers = [
       {
-        # Server — relay to home LAN
+        # Desktop
+        publicKey = "REPLACE_WITH_DESKTOP_PUBLIC_KEY";
+        allowedIPs = [ "10.10.0.2/32" ];
+      }
+      {
+        # Server
         publicKey = "REPLACE_WITH_SERVER_PUBLIC_KEY";
-        allowedIPs = [ "10.10.0.2/32" "192.168.1.0/24" ];
-      }
-      {
-        # Laptop
-        publicKey = "REPLACE_WITH_LAPTOP_PUBLIC_KEY";
         allowedIPs = [ "10.10.0.3/32" ];
-      }
-      {
-        # Phone
-        publicKey = "REPLACE_WITH_PHONE_PUBLIC_KEY";
-        allowedIPs = [ "10.10.0.4/32" ];
       }
     ];
   };
@@ -110,9 +105,6 @@
     description = "bat";
     shell = pkgs.bash;
     extraGroups = [ "wheel" "docker" ];
-    openssh.authorizedKeys.keys = [
-      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDC5cRqlfPrf/ddXJ9vklPI2YEF2p3vEtBsHKcnpxAm8kXt5bdN79u2CKLhaewXIdYXmRMdpExiBrshyTOVsECFmqh0jFJP96EZRl8MbfqjUDTMPRqbJnQIMkYlumb2SR+lfwBN8aQ8m0qtxOq2D6/yJiGKIheVHUXAz0hbucI0OogdOTjGwrvXIzrG51ockhksTpk2lz5AX/JngpwqJKNuB3jXIO0xz/dNL+Wgo19lDjD7ZgXQBXXgpy7EkKbaoFYiKRFBEr5HOLFSnjNmpC7+vUlaeVNFCZWZyAeI8MtWsgsDtFti9s2V7/Lc0RHQW84X3cH4AXwWKwkUzPYc8ZA7 bat@nixos"
-    ];
   };
 
   # Passwordless sudo — key-only SSH is the auth boundary
