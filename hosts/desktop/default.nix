@@ -38,6 +38,12 @@
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.settings.Login.IdleAction = "ignore";
 
+  # Prevent GDM from suspending when no user is logged in
+  systemd.targets.sleep.enable = false;
+  systemd.targets.suspend.enable = false;
+  systemd.targets.hibernate.enable = false;
+  systemd.targets.hybrid-sleep.enable = false;
+
   # Wake-on-LAN support
   networking.interfaces.enp12s0.wakeOnLan.enable = true;
   systemd.services.wol-enable = {
