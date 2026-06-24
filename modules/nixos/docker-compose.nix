@@ -1,13 +1,14 @@
 # Docker Compose deployment — single compose project per host
 { config, lib, pkgs, ... }:
 {
-  options.homelab.compose.directory = lib.mkOption {
-    type = lib.types.path;
-    description = "Path to the directory containing docker-compose.yml and related config";
+  options.homelab.compose.files = lib.mkOption {
+    type = lib.types.attrsOf lib.types.path;
+    description = "Files to include in /etc/docker-compose (name → path)";
   };
 
   config = {
-    environment.etc."docker-compose".source = config.homelab.compose.directory;
+    environment.etc."docker-compose".source = pkgs.linkFarm "compose"
+      (lib.mapAttrsToList (name: path: { inherit name path; }) config.homelab.compose.files);
 
     systemd.services.docker-compose = {
       description = "Docker Compose services";
@@ -15,7 +16,7 @@
       requires = [ "docker.service" ];
       wantedBy = [ "multi-user.target" ];
 
-      restartTriggers = [ config.homelab.compose.directory ];
+      restartTriggers = lib.attrValues config.homelab.compose.files;
 
       serviceConfig = {
         Type = "oneshot";

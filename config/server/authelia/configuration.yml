@@ -2,13 +2,13 @@
 theme: dark
 
 server:
-  address: 'tcp://0.0.0.0:9091'
+  address: 'tcp://0.0.0.0:@authelia_port@'
 
 log:
   level: info
 
 totp:
-  issuer: example.com
+  issuer: @domain@
 
 authentication_backend:
   file:
@@ -26,9 +26,9 @@ access_control:
 
 session:
   cookies:
-    - domain: example.com
-      authelia_url: https://auth.example.com
-      default_redirection_url: https://assistant.example.com
+    - domain: @domain@
+      authelia_url: https://auth.@domain@
+      default_redirection_url: https://assistant.@domain@
 
 storage:
   local:
@@ -37,6 +37,6 @@ storage:
 notifier:
   smtp:
     address: 'submissions://smtp.gmail.com:465'
-    username: 'jane@example.com'
-    sender: 'Auth <jane@example.com>'
+    username: '@smtp_username@'
+    sender: '@smtp_sender@'
     disable_require_tls: false

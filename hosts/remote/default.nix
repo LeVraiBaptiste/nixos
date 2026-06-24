@@ -1,5 +1,8 @@
 # OVH dedicated server — WireGuard, Caddy, Authelia (internet-facing)
 { config, lib, pkgs, ... }:
+let
+  vars = import ../../vars.nix;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -39,8 +42,8 @@
 
   # WireGuard peer hostnames
   networking.extraHosts = ''
-    10.10.0.2 desktop
-    10.10.0.3 server
+    ${vars.wireguard.desktop} desktop
+    ${vars.wireguard.server} server
   '';
 
   # Static networking via systemd-networkd (no NetworkManager on a headless remote)
@@ -81,26 +84,26 @@
       Kind = "wireguard";
     };
     wireguardConfig = {
-      ListenPort = 51820;
+      ListenPort = vars.wireguard.listenPort;
       PrivateKeyFile = "/etc/wireguard/private.key";
     };
     wireguardPeers = [
       {
         # Desktop
-        PublicKey = "GXChVAAGz8hbAO4wV7MxjGL73NVnH0lfdIGBJ4tmfV4=";
-        AllowedIPs = [ "10.10.0.2/32" ];
+        PublicKey = vars.wireguard.publicKeys.desktop;
+        AllowedIPs = [ "${vars.wireguard.desktop}/32" ];
       }
       {
         # Server
-        PublicKey = "EWAOo1afS+rx6V1+Y/Tipv0xwn+X3miPQP6rjrkrC3I=";
-        AllowedIPs = [ "10.10.0.3/32" ];
+        PublicKey = vars.wireguard.publicKeys.server;
+        AllowedIPs = [ "${vars.wireguard.server}/32" ];
       }
     ];
   };
 
   systemd.network.networks."50-wg0" = {
     matchConfig.Name = "wg0";
-    address = [ "10.10.0.1/24" ];
+    address = [ "${vars.wireguard.remote}/24" ];
   };
 
   # SSH — key-only auth (internet-facing)
@@ -118,7 +121,7 @@
       443
     ];
     allowedUDPPorts = [
-      51820
+      vars.wireguard.listenPort
     ];
   };
 
@@ -133,7 +136,13 @@
   # Passwordless sudo — key-only SSH is the auth boundary
   security.sudo.wheelNeedsPassword = false;
 
-  homelab.compose.directory = ../../config/remote;
+  homelab.compose.files = {
+    "docker-compose.yml" = ../../config/remote/docker-compose.yml;
+    "Caddyfile" = pkgs.replaceVars ../../config/remote/Caddyfile {
+      inherit (vars) domain;
+      wg_server = vars.wireguard.server;
+    };
+  };
 
   # Fish shell + starship for server
   programs.fish.enable = true;

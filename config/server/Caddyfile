@@ -1,34 +1,34 @@
 {
   servers {
-    trusted_proxies static 10.10.0.1
+    trusted_proxies static @wg_remote@
   }
 }
 
 (authelia) {
-  forward_auth localhost:9091 {
+  forward_auth localhost:@authelia_port@ {
     uri /api/authz/forward-auth
     copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
   }
 }
 
 # Authelia portal
-http://auth.example.com {
-  reverse_proxy localhost:9091
+http://auth.@domain@ {
+  reverse_proxy localhost:@authelia_port@
 }
 
 # Home Assistant (auth native HA — pas d'Authelia, pour compatibilité app Android)
-http://assistant.example.com {
-  reverse_proxy localhost:8123
+http://assistant.@domain@ {
+  reverse_proxy localhost:@ha_port@
 }
 
 # Jellyfin
-http://medias.example.com {
+http://medias.@domain@ {
   import authelia
-  reverse_proxy localhost:8096
+  reverse_proxy localhost:@jellyfin_port@
 }
 
 # FileBrowser
-http://files.example.com {
+http://files.@domain@ {
   import authelia
-  reverse_proxy localhost:8090
+  reverse_proxy localhost:@filebrowser_port@
 }

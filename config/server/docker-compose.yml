@@ -5,7 +5,7 @@ services:
     volumes:
       - /srv/hass/config:/config
     environment:
-      TZ: Europe/Paris
+      TZ: @timezone@
     restart: unless-stopped
 
   caddy:
@@ -23,32 +23,32 @@ services:
       - /srv/jellyfin/config:/config
       - /srv/media:/media
     environment:
-      TZ: Europe/Paris
+      TZ: @timezone@
     restart: unless-stopped
 
   filebrowser:
     image: filebrowser/filebrowser:latest
     network_mode: host
-    command: --port 8090
+    command: --port @filebrowser_port@
     volumes:
       - /srv/filebrowser/data:/srv
       - /srv/filebrowser/database:/database
       - /srv/filebrowser/config:/config
     environment:
-      TZ: Europe/Paris
+      TZ: @timezone@
     restart: unless-stopped
 
   authelia:
     image: authelia/authelia:latest
     restart: unless-stopped
     volumes:
-      - /srv/authelia/configuration.yml:/config/configuration.yml:ro
-      - /srv/authelia/users_database.yml:/config/users_database.yml
+      - ./authelia/configuration.yml:/config/configuration.yml:ro
+      - ./authelia/users_database.yml:/config/users_database.yml
       - /srv/authelia/data:/data
     network_mode: host
     environment:
-      TZ: Europe/Paris
-      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: "REDACTED"
-      AUTHELIA_SESSION_SECRET: "REDACTED"
-      AUTHELIA_STORAGE_ENCRYPTION_KEY: "REDACTED"
-      AUTHELIA_NOTIFIER_SMTP_PASSWORD: "REDACTED"
+      TZ: @timezone@
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: "@authelia_jwt_secret@"
+      AUTHELIA_SESSION_SECRET: "@authelia_session_secret@"
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: "@authelia_storage_encryption_key@"
+      AUTHELIA_NOTIFIER_SMTP_PASSWORD: "@authelia_smtp_password@"

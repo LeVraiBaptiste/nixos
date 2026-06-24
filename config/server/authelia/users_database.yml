@@ -3,9 +3,8 @@
 #   docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'YOUR_PASSWORD'
 users:
   bat:
-    displayname: "Bat"
-    # REPLACE this hash — generate one with the command above
-    password: "REDACTED"
-    email: bat@example.com
+    displayname: "@user_bat_displayname@"
+    password: "@user_bat_password_hash@"
+    email: @user_bat_email@
     groups:
       - admins

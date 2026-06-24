@@ -1,5 +1,8 @@
 # Dell T330 — headless Docker host, managed via SSH
 { config, lib, pkgs, ... }:
+let
+  vars = import ../../vars.nix;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -65,11 +68,11 @@
 
   # WireGuard — VPN client (tunnel to remote hub)
   networking.wireguard.interfaces.wg0 = {
-    ips = [ "10.10.0.3/24" ];
+    ips = [ "${vars.wireguard.server}/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
     peers = [{
-      publicKey = "ejj87LpGCf9mrplg7Cg7kiEqRz8Zf55Ub5X2IZh44Aw=";
-      endpoint = "203.0.113.10:51820";
+      publicKey = vars.wireguard.publicKeys.remote;
+      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
       allowedIPs = [ "10.10.0.0/24" ];
       persistentKeepalive = 25;
     }];
@@ -83,7 +86,35 @@
     "d /srv/authelia/data 0755 root root -"
   ];
 
-  homelab.compose.directory = ../../config/server;
+  homelab.compose.files = {
+    "docker-compose.yml" = pkgs.replaceVars ../../config/server/docker-compose.yml {
+      inherit (vars) timezone;
+      filebrowser_port = toString vars.services.filebrowser.port;
+      authelia_jwt_secret = vars.secrets.authelia.jwtSecret;
+      authelia_session_secret = vars.secrets.authelia.sessionSecret;
+      authelia_storage_encryption_key = vars.secrets.authelia.storageEncryptionKey;
+      authelia_smtp_password = vars.secrets.authelia.smtpPassword;
+    };
+    "Caddyfile" = pkgs.replaceVars ../../config/server/Caddyfile {
+      inherit (vars) domain;
+      wg_remote = vars.wireguard.remote;
+      authelia_port = toString vars.services.authelia.port;
+      ha_port = toString vars.services.homeassistant.port;
+      jellyfin_port = toString vars.services.jellyfin.port;
+      filebrowser_port = toString vars.services.filebrowser.port;
+    };
+    "authelia/configuration.yml" = pkgs.replaceVars ../../config/server/authelia/configuration.yml {
+      inherit (vars) domain;
+      authelia_port = toString vars.services.authelia.port;
+      smtp_username = vars.smtp.username;
+      smtp_sender = vars.smtp.sender;
+    };
+    "authelia/users_database.yml" = pkgs.replaceVars ../../config/server/authelia/users_database.yml {
+      user_bat_displayname = vars.authelia.users.bat.displayname;
+      user_bat_password_hash = vars.authelia.users.bat.passwordHash;
+      user_bat_email = vars.authelia.users.bat.email;
+    };
+  };
 
   networking.hostName = "server";
 
