@@ -21,8 +21,8 @@
         Type = "oneshot";
         RemainAfterExit = true;
         WorkingDirectory = "/etc/docker-compose";
-        ExecStart = "${pkgs.docker}/bin/docker compose up -d --remove-orphans";
-        ExecStop = "${pkgs.docker}/bin/docker compose down";
+        ExecStart = "${pkgs.docker}/bin/docker compose -p homelab up -d --remove-orphans";
+        ExecStop = "${pkgs.docker}/bin/docker compose -p homelab down";
       };
     };
   };
