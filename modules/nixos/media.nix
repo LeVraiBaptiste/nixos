@@ -4,5 +4,7 @@
     vlc
     gimp
     usbimager
+    mlt
+    ffmpeg
   ];
 }
