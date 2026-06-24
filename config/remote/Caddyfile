@@ -1,5 +1,6 @@
-# Placeholder — update with your domain once DNS is ready
-# e.g. ha.yourdomain.com { reverse_proxy 10.10.0.3:8123 }
-:80 {
-  reverse_proxy 10.10.0.3:8123
+# TLS termination — proxy everything to server's Caddy via WireGuard
+assistant.example.com, medias.example.com, files.example.com, auth.example.com {
+  reverse_proxy 10.10.0.3:80 {
+    header_up X-Forwarded-Proto {scheme}
+  }
 }

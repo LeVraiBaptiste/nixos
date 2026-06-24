@@ -37,6 +37,12 @@
 
   networking.hostName = "remote";
 
+  # WireGuard peer hostnames
+  networking.extraHosts = ''
+    10.10.0.2 desktop
+    10.10.0.3 server
+  '';
+
   # Static networking via systemd-networkd (no NetworkManager on a headless remote)
   networking.networkmanager.enable = false;
   systemd.network.enable = true;

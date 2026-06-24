@@ -75,11 +75,12 @@
     }];
   };
 
-  # Filebrowser directories
+  # Service directories
   systemd.tmpfiles.rules = [
     "d /srv/filebrowser/data 0755 1000 1000 -"
     "d /srv/filebrowser/database 0755 1000 1000 -"
     "d /srv/filebrowser/config 0755 1000 1000 -"
+    "d /srv/authelia/data 0755 root root -"
   ];
 
   homelab.compose.directory = ../../config/server;
