@@ -20,6 +20,20 @@
     jellyfin.port = 8096;
     filebrowser.port = 8090;
     authelia.port = 9091;
+    qbittorrent.port = 8080;
+    prowlarr.port = 9696;
+    sonarr.port = 8989;
+    radarr.port = 7878;
+    shelfarr.port = 5056;
+    audiobookshelf.port = 13378;
+  };
+
+  secrets.gluetun = {
+    vpnServiceProvider = "protonvpn";
+    vpnType = "wireguard";
+    wireguardPrivateKey = "REDACTED";
+    wireguardAddresses = "REDACTED";
+    serverCountries = "Switzerland";
   };
 
   smtp = {

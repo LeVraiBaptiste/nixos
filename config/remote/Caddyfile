@@ -1,6 +1,11 @@
 # TLS termination — proxy everything to server's Caddy via WireGuard
-assistant.@domain@, medias.@domain@, files.@domain@, auth.@domain@ {
-  reverse_proxy @wg_server@:80 {
+assistant.@domain@, medias.@domain@, files.@domain@, auth.@domain@, torrents.@domain@, prowlarr.@domain@, sonarr.@domain@, radarr.@domain@, shelfarr.@domain@, audiobooks.@domain@ {
+  reverse_proxy https://@wg_server@ {
+    header_up Host {host}
     header_up X-Forwarded-Proto {scheme}
+    transport http {
+      tls_insecure_skip_verify
+      tls_server_name {host}
+    }
   }
 }

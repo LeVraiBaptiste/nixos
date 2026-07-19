@@ -52,3 +52,120 @@ services:
       AUTHELIA_SESSION_SECRET: "@authelia_session_secret@"
       AUTHELIA_STORAGE_ENCRYPTION_KEY: "@authelia_storage_encryption_key@"
       AUTHELIA_NOTIFIER_SMTP_PASSWORD: "@authelia_smtp_password@"
+
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "@qbittorrent_port@:@qbittorrent_port@"
+      - "@prowlarr_port@:@prowlarr_port@"
+    environment:
+      TZ: @timezone@
+      VPN_SERVICE_PROVIDER: "@gluetun_vpn_service_provider@"
+      VPN_TYPE: "@gluetun_vpn_type@"
+      WIREGUARD_PRIVATE_KEY: "@gluetun_wireguard_private_key@"
+      WIREGUARD_ADDRESSES: "@gluetun_wireguard_addresses@"
+      SERVER_COUNTRIES: "@gluetun_server_countries@"
+      DOT: "off"
+      DNS_ADDRESS: "10.2.0.1"
+      HEALTH_VPN_DURATION_INITIAL: "30s"
+      HEALTH_SUCCESS_WAIT_DURATION: "10s"
+      FREE_ONLY: "on"
+      FIREWALL_OUTBOUND_SUBNETS: "172.18.0.0/16,192.168.1.0/24"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /srv/gluetun:/gluetun
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: @timezone@
+      WEBUI_PORT: "@qbittorrent_port@"
+    volumes:
+      - /srv/qbittorrent:/config
+      - /srv/media:/media
+    restart: unless-stopped
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      TZ: @timezone@
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: @timezone@
+    volumes:
+      - /srv/prowlarr:/config
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: @timezone@
+    volumes:
+      - /srv/sonarr:/config
+      - /srv/media:/media
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: @timezone@
+    volumes:
+      - /srv/radarr:/config
+      - /srv/media:/media
+    restart: unless-stopped
+
+  shelfarr:
+    image: ghcr.io/pedro-revez-silva/shelfarr:latest
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      HTTP_PORT: "@shelfarr_port@"
+      SOLID_QUEUE_IN_PUMA: "1"
+      TZ: @timezone@
+    volumes:
+      - /srv/shelfarr:/rails/storage
+      - /srv/media/audiobooks:/audiobooks
+      - /srv/media/ebooks:/ebooks
+      - /srv/media/downloads:/downloads
+    restart: unless-stopped
+
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    network_mode: host
+    environment:
+      PORT: "@audiobookshelf_port@"
+      TZ: @timezone@
+    volumes:
+      - /srv/audiobookshelf/config:/config
+      - /srv/audiobookshelf/metadata:/metadata
+      - /srv/media/audiobooks:/audiobooks
+    restart: unless-stopped

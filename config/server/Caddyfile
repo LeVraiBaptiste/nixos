@@ -12,23 +12,71 @@
 }
 
 # Authelia portal
-http://auth.@domain@ {
+auth.@domain@ {
+  tls internal
   reverse_proxy localhost:@authelia_port@
 }
 
-# Home Assistant (auth native HA — pas d'Authelia, pour compatibilité app Android)
+# Home Assistant (HTTPS for laptop/remote, HTTP for Android app on LAN)
+assistant.@domain@ {
+  tls internal
+  reverse_proxy localhost:@ha_port@
+}
+
 http://assistant.@domain@ {
   reverse_proxy localhost:@ha_port@
 }
 
-# Jellyfin
-http://medias.@domain@ {
-  import authelia
+# Jellyfin (has its own auth)
+medias.@domain@ {
+  tls internal
   reverse_proxy localhost:@jellyfin_port@
 }
 
 # FileBrowser
-http://files.@domain@ {
+files.@domain@ {
+  tls internal
   import authelia
   reverse_proxy localhost:@filebrowser_port@
+}
+
+# qBittorrent
+torrents.@domain@ {
+  tls internal
+  import authelia
+  reverse_proxy localhost:@qbittorrent_port@
+}
+
+# Prowlarr
+prowlarr.@domain@ {
+  tls internal
+  import authelia
+  reverse_proxy localhost:@prowlarr_port@
+}
+
+# Sonarr
+sonarr.@domain@ {
+  tls internal
+  import authelia
+  reverse_proxy localhost:@sonarr_port@
+}
+
+# Radarr
+radarr.@domain@ {
+  tls internal
+  import authelia
+  reverse_proxy localhost:@radarr_port@
+}
+
+# Shelfarr
+shelfarr.@domain@ {
+  tls internal
+  import authelia
+  reverse_proxy localhost:@shelfarr_port@
+}
+
+# Audiobookshelf (has its own auth)
+audiobooks.@domain@ {
+  tls internal
+  reverse_proxy localhost:@audiobookshelf_port@
 }

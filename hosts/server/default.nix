@@ -84,6 +84,21 @@ in
     "d /srv/filebrowser/database 0755 1000 1000 -"
     "d /srv/filebrowser/config 0755 1000 1000 -"
     "d /srv/authelia/data 0755 root root -"
+    # Media directories
+    "d /srv/media/downloads 0755 1000 1000 -"
+    "d /srv/media/tv 0755 1000 1000 -"
+    "d /srv/media/movies 0755 1000 1000 -"
+    # Arr stack config
+    "d /srv/gluetun 0755 1000 1000 -"
+    "d /srv/qbittorrent 0755 1000 1000 -"
+    "d /srv/prowlarr 0755 1000 1000 -"
+    "d /srv/sonarr 0755 1000 1000 -"
+    "d /srv/radarr 0755 1000 1000 -"
+    "d /srv/shelfarr 0755 1000 1000 -"
+    "d /srv/media/ebooks 0755 1000 1000 -"
+    "d /srv/audiobookshelf/config 0755 1000 1000 -"
+    "d /srv/audiobookshelf/metadata 0755 1000 1000 -"
+    "d /srv/media/audiobooks 0755 1000 1000 -"
   ];
 
   homelab.compose.files = {
@@ -94,6 +109,16 @@ in
       authelia_session_secret = vars.secrets.authelia.sessionSecret;
       authelia_storage_encryption_key = vars.secrets.authelia.storageEncryptionKey;
       authelia_smtp_password = vars.secrets.authelia.smtpPassword;
+      # Arr stack
+      qbittorrent_port = toString vars.services.qbittorrent.port;
+      gluetun_vpn_service_provider = vars.secrets.gluetun.vpnServiceProvider;
+      gluetun_vpn_type = vars.secrets.gluetun.vpnType;
+      gluetun_wireguard_private_key = vars.secrets.gluetun.wireguardPrivateKey;
+      gluetun_wireguard_addresses = vars.secrets.gluetun.wireguardAddresses;
+      gluetun_server_countries = vars.secrets.gluetun.serverCountries;
+      prowlarr_port = toString vars.services.prowlarr.port;
+      shelfarr_port = toString vars.services.shelfarr.port;
+      audiobookshelf_port = toString vars.services.audiobookshelf.port;
     };
     "Caddyfile" = pkgs.replaceVars ../../config/server/Caddyfile {
       inherit (vars) domain;
@@ -102,6 +127,13 @@ in
       ha_port = toString vars.services.homeassistant.port;
       jellyfin_port = toString vars.services.jellyfin.port;
       filebrowser_port = toString vars.services.filebrowser.port;
+      # Arr stack
+      qbittorrent_port = toString vars.services.qbittorrent.port;
+      prowlarr_port = toString vars.services.prowlarr.port;
+      sonarr_port = toString vars.services.sonarr.port;
+      radarr_port = toString vars.services.radarr.port;
+      shelfarr_port = toString vars.services.shelfarr.port;
+      audiobookshelf_port = toString vars.services.audiobookshelf.port;
     };
     "authelia/configuration.yml" = pkgs.replaceVars ../../config/server/authelia/configuration.yml {
       inherit (vars) domain;
@@ -124,8 +156,9 @@ in
     allowedTCPPorts = [
       22
       80
-      8123
+      443
     ];
+    trustedInterfaces = [ "docker0" "br-+" "wg0" ];
   };
 
   # User account (bash shell required for nixos-rebuild --target-host)
