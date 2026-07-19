@@ -34,7 +34,7 @@
         inherit system;
         config.allowUnfree = true;
         overlays = [
-          (import ./overlays/claude-code.nix)
+          # (import ./overlays/claude-code.nix)
         ];
       };
 
