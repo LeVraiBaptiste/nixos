@@ -79,6 +79,7 @@
     ../../modules/nixos/obs.nix
     ../../modules/nixos/steam.nix
     ../../modules/nixos/brave.nix
+    ../../modules/nixos/chromium.nix
     ../../modules/nixos/zen-browser.nix
     ../../modules/nixos/davinci-resolve.nix
     ../../modules/nixos/logitech.nix

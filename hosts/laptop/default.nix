@@ -19,6 +19,7 @@
     ../../modules/nixos/dictation-client.nix
     ../../modules/nixos/steam.nix
     ../../modules/nixos/brave.nix
+    ../../modules/nixos/chromium.nix
     ../../modules/nixos/zen-browser.nix
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
