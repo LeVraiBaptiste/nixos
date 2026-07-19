@@ -6,6 +6,9 @@
     nodejs_24
     python3
     go
+    golangci-lint
+    gopls
+    delve
     bun
     pnpm
 
