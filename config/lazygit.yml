@@ -10,8 +10,8 @@ gui:
       - "#666666"
     lightTheme: false
 git:
-  pagers:
-    - pager: "delta --dark --paging=never --side-by-side --syntax-theme='Visual Studio Dark+'"
+  diffRenderers:
+    - command: "delta --dark --paging=never --side-by-side --syntax-theme='Visual Studio Dark+'"
   diffContextSize: 99999
   autoFetch: true
   autoRefresh: true
