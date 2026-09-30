@@ -6,7 +6,14 @@
       obs-backgroundremoval
       obs-composite-blur
       obs-pipewire-audio-capture
-      obs-shaderfilter
+      # obs-shaderfilter uses -Werror and fails on a deprecation warning
+      # against OBS 32.2.2 (obs_properties_add_button). Drop -Werror until
+      # nixpkgs ships a fix.
+      (obs-shaderfilter.overrideAttrs (old: {
+        env = (old.env or { }) // {
+          NIX_CFLAGS_COMPILE = toString (old.env.NIX_CFLAGS_COMPILE or "") + " -Wno-error";
+        };
+      }))
       wlrobs
     ];
   };
