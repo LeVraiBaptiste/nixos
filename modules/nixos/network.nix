@@ -7,6 +7,7 @@
 
   environment.systemPackages = with pkgs; [
     dnsutils # dig, nslookup
+    mtr # network diagnostic tool (traceroute + ping)
     openvpn # raw openvpn CLI
   ];
 }
