@@ -2,6 +2,10 @@ gui:
   showIcons: true
   nerdFontsVersion: "3"
   sidePanelWidth: 0.2
+  border: rounded
+  showDivergenceFromBaseBranch: arrowAndNumber # e.g. ↑2↓1 relative to main
+  showBranchCommitHash: true
+  expandFocusedSidePanel: true # the focused side panel grows
   theme:
     activeBorderColor:
       - white
@@ -10,12 +14,17 @@ gui:
       - "#666666"
     lightTheme: false
 git:
+  # Cycle between renderers with `|`: unified first (readable in narrow
+  # panels), side-by-side second.
   diffRenderers:
+    - command: "delta --dark --paging=never --syntax-theme='Visual Studio Dark+'"
     - command: "delta --dark --paging=never --side-by-side --syntax-theme='Visual Studio Dark+'"
   diffContextSize: 99999
   autoFetch: true
   autoRefresh: true
+  log:
+    showGraph: always
 os:
-  edit: "nvim {{filename}}"
-  editAtLine: "nvim +{{line}} {{filename}}"
+  editPreset: "nano"
+promptToReturnFromSubprocess: false # no "press enter" after exiting nano
 confirmOnQuit: false
