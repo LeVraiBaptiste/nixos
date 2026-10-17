@@ -1,19 +1,28 @@
 { config, pkgs, ... }:
+let
+  # Build an OBS plugin with warnings no longer treated as errors
+  noWerror =
+    pkg:
+    pkg.overrideAttrs (old: {
+      env = (old.env or { }) // {
+        NIX_CFLAGS_COMPILE = toString (old.env.NIX_CFLAGS_COMPILE or "") + " -Wno-error";
+      };
+    });
+in
 {
   programs.obs-studio = {
     enable = true;
     plugins = with pkgs.obs-studio-plugins; [
       obs-backgroundremoval
-      obs-composite-blur
+      # obs-composite-blur uses -Werror and fails on -Wdiscarded-qualifiers
+      # (strrchr on a const char*) with the newer GCC. Drop -Werror until
+      # nixpkgs ships a fix.
+      (noWerror obs-composite-blur)
       obs-pipewire-audio-capture
       # obs-shaderfilter uses -Werror and fails on a deprecation warning
       # against OBS 32.2.2 (obs_properties_add_button). Drop -Werror until
       # nixpkgs ships a fix.
-      (obs-shaderfilter.overrideAttrs (old: {
-        env = (old.env or { }) // {
-          NIX_CFLAGS_COMPILE = toString (old.env.NIX_CFLAGS_COMPILE or "") + " -Wno-error";
-        };
-      }))
+      (noWerror obs-shaderfilter)
       wlrobs
     ];
   };
