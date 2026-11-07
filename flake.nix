@@ -40,6 +40,7 @@
         config.allowUnfree = true;
         overlays = [
           # (import ./overlays/claude-code.nix)
+          (import ./overlays/orca-ide.nix)
         ];
       };
 
@@ -48,6 +49,9 @@
       };
     in
     {
+      # Custom packages exposed so `nix-update --flake <name>` can bump them
+      packages.${system}.orca-ide = pkgs-unstable.orca-ide;
+
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = sharedSpecialArgs;

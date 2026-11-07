@@ -28,6 +28,7 @@
 
     # Editors
     vscode
+    pkgs-unstable.orca-ide
     micro
     glow
     pkgs-unstable.claude-code
