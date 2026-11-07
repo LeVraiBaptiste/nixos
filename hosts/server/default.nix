@@ -105,17 +105,12 @@ in
     "docker-compose.yml" = pkgs.replaceVars ../../config/server/docker-compose.yml {
       inherit (vars) timezone;
       filebrowser_port = toString vars.services.filebrowser.port;
-      authelia_jwt_secret = vars.secrets.authelia.jwtSecret;
-      authelia_session_secret = vars.secrets.authelia.sessionSecret;
-      authelia_storage_encryption_key = vars.secrets.authelia.storageEncryptionKey;
-      authelia_smtp_password = vars.secrets.authelia.smtpPassword;
       # Arr stack
       qbittorrent_port = toString vars.services.qbittorrent.port;
-      gluetun_vpn_service_provider = vars.secrets.gluetun.vpnServiceProvider;
-      gluetun_vpn_type = vars.secrets.gluetun.vpnType;
-      gluetun_wireguard_private_key = vars.secrets.gluetun.wireguardPrivateKey;
-      gluetun_wireguard_addresses = vars.secrets.gluetun.wireguardAddresses;
-      gluetun_server_countries = vars.secrets.gluetun.serverCountries;
+      gluetun_vpn_service_provider = vars.gluetun.vpnServiceProvider;
+      gluetun_vpn_type = vars.gluetun.vpnType;
+      gluetun_wireguard_addresses = vars.gluetun.wireguardAddresses;
+      gluetun_server_countries = vars.gluetun.serverCountries;
       prowlarr_port = toString vars.services.prowlarr.port;
       shelfarr_port = toString vars.services.shelfarr.port;
       audiobookshelf_port = toString vars.services.audiobookshelf.port;
@@ -141,10 +136,55 @@ in
       smtp_username = vars.smtp.username;
       smtp_sender = vars.smtp.sender;
     };
-    "authelia/users_database.yml" = pkgs.replaceVars ../../config/server/authelia/users_database.yml {
-      user_bat_displayname = vars.authelia.users.bat.displayname;
-      user_bat_password_hash = vars.authelia.users.bat.passwordHash;
-      user_bat_email = vars.authelia.users.bat.email;
+  };
+
+  # Secrets — encrypted in secrets/server.yaml, decrypted with this host's SSH key
+  # at activation into /run/secrets (never in the Nix store). Edit with:
+  #   sops secrets/server.yaml
+  sops = {
+    defaultSopsFile = ../../secrets/server.yaml;
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+
+    secrets = {
+      "authelia/jwt_secret" = { };
+      "authelia/session_secret" = { };
+      "authelia/storage_encryption_key" = { };
+      "authelia/smtp_password" = { };
+      "authelia/users/bat/password_hash" = { };
+      "gluetun/wireguard_private_key" = { };
+    };
+
+    # Rendered files referenced by absolute path from docker-compose.yml
+    templates = {
+      "authelia.env" = {
+        content = ''
+          AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="${config.sops.placeholder."authelia/jwt_secret"}"
+          AUTHELIA_SESSION_SECRET="${config.sops.placeholder."authelia/session_secret"}"
+          AUTHELIA_STORAGE_ENCRYPTION_KEY="${config.sops.placeholder."authelia/storage_encryption_key"}"
+          AUTHELIA_NOTIFIER_SMTP_PASSWORD="${config.sops.placeholder."authelia/smtp_password"}"
+        '';
+        restartUnits = [ "docker-compose.service" ];
+      };
+      "gluetun.env" = {
+        content = ''
+          WIREGUARD_PRIVATE_KEY="${config.sops.placeholder."gluetun/wireguard_private_key"}"
+        '';
+        restartUnits = [ "docker-compose.service" ];
+      };
+      # Generate the password hash with:
+      #   docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'YOUR_PASSWORD'
+      "authelia-users.yml" = {
+        content = ''
+          users:
+            bat:
+              displayname: "${vars.authelia.users.bat.displayname}"
+              password: "${config.sops.placeholder."authelia/users/bat/password_hash"}"
+              email: ${vars.authelia.users.bat.email}
+              groups:
+                - admins
+        '';
+        restartUnits = [ "docker-compose.service" ];
+      };
     };
   };
 

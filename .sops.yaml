@@ -1,0 +1,12 @@
+# sops recipients — any listed key can decrypt (see docs/secrets.md)
+keys:
+  - &desktop age1vm3ahegdztm6zgxfykf0pt43xjadwxz9j9vp8df727zka60ntaeqpth7nk
+  - &backup age1prl2cuslk7vj8jjp9yzu5xne9u85q4dya2ymazkcngjjnumz4ueqky3pge
+  - &server age1vw9vjhu0tdlynh5tfh53a8tjl8fqljsyvqhp8at20wt8dz9hagas68h787
+creation_rules:
+  - path_regex: secrets/server\.yaml$
+    key_groups:
+      - age:
+          - *desktop
+          - *backup
+          - *server

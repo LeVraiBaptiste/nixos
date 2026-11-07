@@ -17,7 +17,7 @@
 
 ## Project Structure
 
-- `flake.nix` - Flake entry point with `desktop`, `laptop`, `server`, and `remote` configurations (nixpkgs unstable, home-manager, disko, zen-browser, claude-foreman)
+- `flake.nix` - Flake entry point with `desktop`, `laptop`, `server`, and `remote` configurations (nixpkgs unstable, home-manager, disko, sops-nix, zen-browser, claude-foreman)
 - `hosts/` - Host-specific configurations (each host is a directory with `default.nix` + `hardware-configuration.nix`)
     - `desktop/` - Desktop: nvidia, steam, dictation, obs, davinci-resolve, all modules
     - `laptop/` - Laptop: lighter config (no nvidia, steam, or dictation)
@@ -34,7 +34,9 @@
 - `scripts/` - Shell/Python scripts (dictation, whisper speech-to-text, HA config backup, IPMI fan control)
 - `models/` - Whisper model files (ggml-base, ggml-medium, ggml-large-v3-turbo)
 - `overlays/` - Nix overlays (claude-code)
-- `docs/` - Documentation (architecture, wireguard setup)
+- `docs/` - Documentation (architecture, wireguard setup, secrets)
+- `vars.nix` - Shared non-secret values (domain, IPs, ports, public keys), committed
+- `secrets/` - sops-encrypted secrets (`sops secrets/server.yaml` to edit, recipients in `.sops.yaml`, see `docs/secrets.md`)
 
 ## Environment
 

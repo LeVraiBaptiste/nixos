@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
-
+let
+  vars = import ../../vars.nix;
+in
 {
   networking.hostName = "desktop";
 
@@ -24,11 +26,11 @@
 
   # WireGuard — VPN client (tunnel to remote hub)
   networking.wireguard.interfaces.wg0 = {
-    ips = [ "10.10.0.2/24" ];
+    ips = [ "${vars.wireguard.desktop}/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
     peers = [{
-      publicKey = "ejj87LpGCf9mrplg7Cg7kiEqRz8Zf55Ub5X2IZh44Aw=";
-      endpoint = "203.0.113.10:51820";
+      publicKey = vars.wireguard.publicKeys.remote;
+      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
       allowedIPs = [ "10.10.0.0/24" ];
       persistentKeepalive = 25;
     }];

@@ -25,6 +25,8 @@
     openssl
     firebase-tools
     terraform
+    sops
+    age
 
     # Editors
     vscode

@@ -14,6 +14,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Encrypted secrets (age), decrypted on the target host at activation
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     zen-browser = {
       url = "github:youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -31,7 +37,7 @@
 
 };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, zen-browser, claude-foreman, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, ... }:
     let
       system = "x86_64-linux";
 
@@ -82,6 +88,7 @@
         inherit system;
         modules = [
           ./hosts/server
+          sops-nix.nixosModules.sops
         ];
       };
 

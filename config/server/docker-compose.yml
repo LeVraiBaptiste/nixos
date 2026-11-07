@@ -43,15 +43,13 @@ services:
     restart: unless-stopped
     volumes:
       - ./authelia/configuration.yml:/config/configuration.yml:ro
-      - ./authelia/users_database.yml:/config/users_database.yml
+      - /run/secrets/rendered/authelia-users.yml:/config/users_database.yml:ro
       - /srv/authelia/data:/data
     network_mode: host
+    # Secrets rendered by sops-nix (hosts/server/default.nix)
+    env_file: /run/secrets/rendered/authelia.env
     environment:
       TZ: @timezone@
-      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: "@authelia_jwt_secret@"
-      AUTHELIA_SESSION_SECRET: "@authelia_session_secret@"
-      AUTHELIA_STORAGE_ENCRYPTION_KEY: "@authelia_storage_encryption_key@"
-      AUTHELIA_NOTIFIER_SMTP_PASSWORD: "@authelia_smtp_password@"
 
   gluetun:
     image: qmcgaw/gluetun:latest
@@ -66,7 +64,6 @@ services:
       TZ: @timezone@
       VPN_SERVICE_PROVIDER: "@gluetun_vpn_service_provider@"
       VPN_TYPE: "@gluetun_vpn_type@"
-      WIREGUARD_PRIVATE_KEY: "@gluetun_wireguard_private_key@"
       WIREGUARD_ADDRESSES: "@gluetun_wireguard_addresses@"
       SERVER_COUNTRIES: "@gluetun_server_countries@"
       DOT: "off"
@@ -75,6 +72,8 @@ services:
       HEALTH_SUCCESS_WAIT_DURATION: "10s"
       FREE_ONLY: "on"
       FIREWALL_OUTBOUND_SUBNETS: "172.18.0.0/16,192.168.1.0/24"
+    # WIREGUARD_PRIVATE_KEY rendered by sops-nix (hosts/server/default.nix)
+    env_file: /run/secrets/rendered/gluetun.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
