@@ -8,15 +8,16 @@ Manual steps required after deploying the NixOS configs.
             Remote (203.0.113.10)
             Hub WireGuard (10.10.0.1:51820)
             ip_forward=1
-              │         │
-           Desktop    Server
-           10.10.0.2   10.10.0.3
+              │         │          │
+           Desktop    Server     Phone
+           10.10.0.2   10.10.0.3  10.10.0.4
 ```
 
 - **Remote**: WireGuard hub with public IP, routes traffic between peers
 - **Desktop**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
 - **Server**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
-- **Laptop/Phone**: no WireGuard — access services via SSH ProxyJump or HTTPS (Caddy on Remote)
+- **Phone**: Android WireGuard app (always-on VPN, `AllowedIPs = 10.10.0.0/24` only), used to reach Orca on the desktop (`10.10.0.2:6768`, opened on `wg0` only)
+- **Laptop**: no WireGuard — access services via SSH ProxyJump or HTTPS (Caddy on Remote)
 
 ## 1. Generate keys
 

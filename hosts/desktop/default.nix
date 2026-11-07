@@ -34,6 +34,9 @@
     }];
   };
 
+  # Orca mobile companion — direct pairing over WireGuard only, never exposed on LAN/WAN
+  networking.firewall.interfaces.wg0.allowedTCPPorts = [ 6768 ];
+
   # Prevent suspend on idle (keeps SSH sessions alive when no local user is logged in)
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.settings.Login.IdleAction = "ignore";

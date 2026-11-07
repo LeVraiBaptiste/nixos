@@ -44,6 +44,7 @@ in
   networking.extraHosts = ''
     ${vars.wireguard.desktop} desktop
     ${vars.wireguard.server} server
+    ${vars.wireguard.phone} phone
   '';
 
   # Static networking via systemd-networkd (no NetworkManager on a headless remote)
@@ -77,7 +78,7 @@ in
     "z /etc/wireguard/private.key 0640 root systemd-network -"
   ];
 
-  # WireGuard — VPN hub (Desktop + Server connect here)
+  # WireGuard — VPN hub (Desktop + Server + Phone connect here)
   systemd.network.netdevs."10-wg0" = {
     netdevConfig = {
       Name = "wg0";
@@ -97,6 +98,11 @@ in
         # Server
         PublicKey = vars.wireguard.publicKeys.server;
         AllowedIPs = [ "${vars.wireguard.server}/32" ];
+      }
+      {
+        # Phone (Android) — reaches Orca on the desktop
+        PublicKey = vars.wireguard.publicKeys.phone;
+        AllowedIPs = [ "${vars.wireguard.phone}/32" ];
       }
     ];
   };
