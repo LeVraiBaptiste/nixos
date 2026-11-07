@@ -18,7 +18,26 @@ trap cleanup SIGTERM SIGINT EXIT
 TEMPS=(25 30 35 40)
 SPEEDS=(1  5  10 15)
 
+# Hysteresis (°C): step up as soon as a threshold is reached, but only step
+# down once the temp is HYST degrees below it, to avoid flapping at a boundary
+HYST=2
+
 INTERVAL=30
+
+# Index of the first threshold above TEMP + offset; ${#TEMPS[@]} means auto control
+tier_for() {
+  local temp=$1 offset=$2 i
+  for i in "${!TEMPS[@]}"; do
+    if [ "$((temp + offset))" -lt "${TEMPS[$i]}" ]; then
+      echo "$i"
+      return
+    fi
+  done
+  echo "${#TEMPS[@]}"
+}
+
+# Current tier; empty until the first valid reading
+TIER=""
 
 while true; do
   TEMP=$("$IPMITOOL" sdr type temperature | grep '3\.1' | head -n1 | awk -F'|' '{print $5}' | awk '{print $1}' | cut -d'.' -f1 || true)
@@ -26,25 +45,28 @@ while true; do
   if [ -z "$TEMP" ]; then
     echo "Warning: could not read CPU temperature — restoring auto control"
     "$IPMITOOL" raw 0x30 0x30 0x01 0x01
+    TIER=""
     sleep "$INTERVAL"
     continue
   fi
 
-  PWM=""
-  for i in "${!TEMPS[@]}"; do
-    if [ "$TEMP" -lt "${TEMPS[$i]}" ]; then
-      PWM="${SPEEDS[$i]}"
-      echo "CPU ${TEMP}°C (<${TEMPS[$i]}) — fans at ${PWM}%"
-      break
-    fi
-  done
+  UP=$(tier_for "$TEMP" 0)
+  DOWN=$(tier_for "$TEMP" "$HYST")
+  if [ -z "$TIER" ] || [ "$UP" -gt "$TIER" ]; then
+    TIER=$UP
+  elif [ "$DOWN" -lt "$TIER" ]; then
+    TIER=$DOWN
+  fi
 
-  if [ -z "$PWM" ]; then
+  if [ "$TIER" -ge "${#TEMPS[@]}" ]; then
     echo "CPU ${TEMP}°C (>=${TEMPS[-1]}) — restoring auto control"
     "$IPMITOOL" raw 0x30 0x30 0x01 0x01
     sleep "$INTERVAL"
     continue
   fi
+
+  PWM="${SPEEDS[$TIER]}"
+  echo "CPU ${TEMP}°C (tier <${TEMPS[$TIER]}) — fans at ${PWM}%"
 
   # Enable manual mode and set fan speed
   "$IPMITOOL" raw 0x30 0x30 0x01 0x00
