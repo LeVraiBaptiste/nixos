@@ -59,6 +59,26 @@
         "type": "github"
       }
     },
+    "gamepad-desktop": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792258822,
+        "narHash": "sha256-ps12lC37StBCmLxPSgiD7cKkDdBqpuQ9I5w+kZkfWoU=",
+        "owner": "LeVraiBaptiste",
+        "repo": "gamepad-desktop",
+        "rev": "736a43dd4405ddbd2e45c825d4a45ef71de92e52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "LeVraiBaptiste",
+        "repo": "gamepad-desktop",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -99,6 +119,7 @@
       "inputs": {
         "claude-foreman": "claude-foreman",
         "disko": "disko",
+        "gamepad-desktop": "gamepad-desktop",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "zen-browser": "zen-browser"

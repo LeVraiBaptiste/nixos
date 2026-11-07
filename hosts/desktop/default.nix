@@ -85,6 +85,7 @@
     ../../modules/nixos/logitech.nix
     ../../modules/nixos/media.nix
     ../../modules/nixos/qbittorrent.nix
+    ../../modules/nixos/gamepad-desktop.nix
 
     # Home
     ../../modules/home/ssh.nix

@@ -24,6 +24,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    gamepad-desktop = {
+      url = "github:LeVraiBaptiste/gamepad-desktop";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
 };
 
   outputs = inputs@{ self, nixpkgs, home-manager, disko, zen-browser, claude-foreman, ... }:
