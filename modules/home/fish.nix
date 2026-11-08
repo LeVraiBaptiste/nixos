@@ -6,8 +6,26 @@
       set -gx CLAUDE_CODE_NO_FLICKER 1
     '';
     interactiveShellInit = ''
-      # Session picker on terminal open (skip if already in tmux or non-interactive)
-      if status is-interactive; and not set -q TMUX
+      # tmux inside Orca: dedicated server (-L orca) with its own resurrect history,
+      # one session per Orca worktree. Must start from an Orca terminal so the
+      # server inherits Orca's env (agent hooks need ORCA_PANE_KEY).
+      function tmux-orca
+        if not set -q ORCA_PANE_KEY
+          echo "tmux-orca: run this from an Orca terminal" >&2
+          return 1
+        end
+        set -l name (path basename (string replace -r '^.*::' "" -- $ORCA_WORKTREE_ID) | string replace -ra '[.:]' _)
+        test -n "$name"; or set name orca
+        if not tmux -L orca has-session 2>/dev/null
+          tmux -L orca new-session -d -s $name -c $PWD
+          tmux -L orca run-shell "bash ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+        end
+        tmux -L orca new-session -A -s $name -c $PWD
+      end
+
+      # Session picker on terminal open (skip if already in tmux or non-interactive).
+      # Skipped in Orca terminals: Orca launches agents in them and fzf would grab the input.
+      if status is-interactive; and not set -q TMUX; and test "$TERM_PROGRAM" != Orca
         set choice (printf "tmux\nclaude-foreman\nshell" | fzf --height=5 --layout=reverse --prompt="Session > " --no-info)
         switch "$choice"
           case "tmux"
