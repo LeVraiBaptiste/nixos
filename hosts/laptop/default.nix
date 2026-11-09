@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
-
+let
+  vars = import ../../vars.nix;
+in
 {
   networking.hostName = "laptop";
   imports = [
@@ -42,11 +44,23 @@
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
 
+  # WireGuard — VPN client (tunnel to remote hub), split tunnel: only 10.10.0.0/24
+  networking.wireguard.interfaces.wg0 = {
+    ips = [ "${vars.wireguard.laptop}/24" ];
+    privateKeyFile = "/etc/wireguard/private.key";
+    peers = [{
+      publicKey = vars.wireguard.publicKeys.remote;
+      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
+      allowedIPs = [ "10.10.0.0/24" ];
+      persistentKeepalive = 25;
+    }];
+  };
+
   # Wake-on-LAN
   environment.systemPackages = with pkgs; [ wol ];
 
-  # Remote desktop for GPU-accelerated dictation
-  services.dictation-client.remoteHost = "desktop.local.com";
+  # Remote desktop for GPU-accelerated dictation: LAN at home, WireGuard elsewhere
+  services.dictation-client.remoteHosts = [ "desktop.local.com" vars.wireguard.desktop ];
 
   # GNOME Desktop Environment
   services.xserver.enable = true;

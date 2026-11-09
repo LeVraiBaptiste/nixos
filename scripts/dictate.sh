@@ -13,7 +13,7 @@ if ! systemctl is-active --quiet whisper-server; then
 fi
 
 # Check if ollama is running for LLM mode (skip if remote desktop is configured)
-if [ "$MODE" = "llm" ] && [ -z "$WHISPER_REMOTE_HOST" ]; then
+if [ "$MODE" = "llm" ] && [ -z "$WHISPER_REMOTE_HOSTS" ]; then
     if ! systemctl is-active --quiet ollama; then
         notify-send --urgency=critical "Voice Dictation" \
             "Ollama server not running"

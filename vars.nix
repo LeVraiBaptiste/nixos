@@ -8,6 +8,7 @@
     desktop = "10.10.0.2";
     server = "10.10.0.3";
     phone = "10.10.0.4";
+    laptop = "10.10.0.5";
     remoteEndpoint = "203.0.113.10";
     listenPort = 51820;
     publicKeys = {
@@ -15,6 +16,7 @@
       desktop = "GXChVAAGz8hbAO4wV7MxjGL73NVnH0lfdIGBJ4tmfV4=";
       server = "EWAOo1afS+rx6V1+Y/Tipv0xwn+X3miPQP6rjrkrC3I=";
       phone = "LyCeczzBiWZ1N4p3xMkAgfnuWPrsgAZjLYRE7wDUTUQ=";
+      laptop = "oDk3DX0DqACRVpmhoBCj9zgxpowCgT9Df8i83orExRc=";
     };
   };
 

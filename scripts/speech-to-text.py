@@ -20,7 +20,8 @@ OLLAMA_MODEL = "gemma4:e4b"
 OLLAMA_TIMEOUT = 120
 
 # Remote desktop for GPU-accelerated transcription (set via env)
-WHISPER_REMOTE_HOST = os.environ.get("WHISPER_REMOTE_HOST", "")
+# Space-separated, tried in order (e.g. LAN address first, then WireGuard)
+WHISPER_REMOTE_HOSTS = os.environ.get("WHISPER_REMOTE_HOSTS", "").split()
 WHISPER_REMOTE_PORT = os.environ.get("WHISPER_REMOTE_PORT", "8080")
 OLLAMA_REMOTE_PORT = os.environ.get("OLLAMA_REMOTE_PORT", "11434")
 
@@ -134,19 +135,22 @@ def resolve_servers():
     ollama_url = OLLAMA_LOCAL_URL
     remote = False
 
-    if WHISPER_REMOTE_HOST:
+    for host in WHISPER_REMOTE_HOSTS:
         try:
             req = Request(
-                f"http://{WHISPER_REMOTE_HOST}:{WHISPER_REMOTE_PORT}/",
+                f"http://{host}:{WHISPER_REMOTE_PORT}/",
                 method="GET",
             )
             urlopen(req, timeout=1)
-            whisper_url = f"http://{WHISPER_REMOTE_HOST}:{WHISPER_REMOTE_PORT}/inference"
-            ollama_url = f"http://{WHISPER_REMOTE_HOST}:{OLLAMA_REMOTE_PORT}/api/generate"
+            whisper_url = f"http://{host}:{WHISPER_REMOTE_PORT}/inference"
+            ollama_url = f"http://{host}:{OLLAMA_REMOTE_PORT}/api/generate"
             remote = True
-            debug_log(f"Remote desktop available at {WHISPER_REMOTE_HOST}")
+            debug_log(f"Remote desktop available at {host}")
+            break
         except Exception:
-            debug_log(f"Remote desktop {WHISPER_REMOTE_HOST} unavailable, using local CPU")
+            debug_log(f"Remote desktop {host} unavailable")
+    if WHISPER_REMOTE_HOSTS and not remote:
+        debug_log("No remote desktop reachable, using local CPU")
 
     _resolved = (whisper_url, ollama_url, remote)
     return _resolved

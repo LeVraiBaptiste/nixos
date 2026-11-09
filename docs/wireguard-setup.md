@@ -8,20 +8,20 @@ Manual steps required after deploying the NixOS configs.
             Remote (203.0.113.10)
             Hub WireGuard (10.10.0.1:51820)
             ip_forward=1
-              │         │          │
-           Desktop    Server     Phone
-           10.10.0.2   10.10.0.3  10.10.0.4
+              │         │          │          │
+           Desktop    Server     Phone      Laptop
+           10.10.0.2   10.10.0.3  10.10.0.4  10.10.0.5
 ```
 
 - **Remote**: WireGuard hub with public IP, routes traffic between peers
 - **Desktop**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
 - **Server**: WG client, direct peer (`persistentKeepalive=25`, behind NAT)
 - **Phone**: Android WireGuard app (always-on VPN, `AllowedIPs = 10.10.0.0/24` only), used to reach Orca on the desktop (`10.10.0.2:6768`, opened on `wg0` only)
-- **Laptop**: no WireGuard — access services via SSH ProxyJump or HTTPS (Caddy on Remote)
+- **Laptop**: WG client, roaming peer (`persistentKeepalive=25`, `AllowedIPs = 10.10.0.0/24` only), reaches desktop/server (incl. Orca via SSH) from anywhere
 
 ## 1. Generate keys
 
-On **each host** (remote, server, desktop):
+On **each host** (remote, server, desktop, laptop):
 
 ```bash
 sudo mkdir -p /etc/wireguard
@@ -54,7 +54,7 @@ sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.
 # 3. Server third (from LAN — Server moves to .3, tunnel re-establishes)
 sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password
 
-# 4. Laptop last (removes WG config, purely subtractive)
+# 4. Laptop (WG client, same as desktop)
 sudo nixos-rebuild switch --flake /etc/nixos#laptop
 ```
 
@@ -63,7 +63,7 @@ sudo nixos-rebuild switch --flake /etc/nixos#laptop
 From **remote**:
 
 ```bash
-sudo wg show        # should list 2 peers (Desktop, Server)
+sudo wg show        # should list 4 peers (Desktop, Server, Phone, Laptop)
 ping 10.10.0.2      # reaches desktop
 ping 10.10.0.3      # reaches server
 ```
@@ -90,9 +90,9 @@ ping 10.10.0.2      # reaches desktop via remote
 curl http://203.0.113.10    # should return HA login page (proxied to 10.10.0.3:8123)
 ```
 
-## 6. SSH access from Laptop/Phone
+## 6. SSH access without WireGuard
 
-No WireGuard needed — use SSH ProxyJump through Remote:
+From a machine without WireGuard, use SSH ProxyJump through Remote:
 
 ```bash
 # Direct jump

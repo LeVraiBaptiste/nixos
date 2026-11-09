@@ -1,6 +1,7 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.dictation-client;
+  remoteHosts = lib.concatStringsSep " " cfg.remoteHosts;
 
   whisperCpu = pkgs.whisper-cpp;
 
@@ -13,14 +14,14 @@ let
     (builtins.readFile ../../scripts/dictation-llm-prompt.txt);
 
   dictateScript = pkgs.writeShellScriptBin "dictate" ''
-    export WHISPER_REMOTE_HOST="${cfg.remoteHost}"
+    export WHISPER_REMOTE_HOSTS="${remoteHosts}"
     ${builtins.readFile ../../scripts/dictate.sh}
   '';
   speechToTextScript = pkgs.writeScriptBin "speech-to-text" ''
     #!${pkgs.python3}/bin/python3
     import os
     os.environ.setdefault("DICTATION_LLM_PROMPT", "${llmPromptFile}")
-    os.environ.setdefault("WHISPER_REMOTE_HOST", "${cfg.remoteHost}")
+    os.environ.setdefault("WHISPER_REMOTE_HOSTS", "${remoteHosts}")
     ${builtins.readFile ../../scripts/speech-to-text.py}
   '';
   setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (builtins.readFile ../../scripts/setup-whisper-models.sh);
@@ -32,9 +33,9 @@ let
 in
 {
   options.services.dictation-client = {
-    remoteHost = lib.mkOption {
-      type = lib.types.str;
-      description = "Hostname or IP of the remote desktop for GPU-accelerated transcription";
+    remoteHosts = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      description = "Addresses of the remote desktop for GPU-accelerated transcription, tried in order (first reachable wins, else local CPU)";
     };
   };
 
