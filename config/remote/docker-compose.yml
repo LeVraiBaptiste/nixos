@@ -1,8 +1,0 @@
-services:
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - /srv/caddy/data:/data
-    network_mode: host
