@@ -41,26 +41,6 @@
         "type": "github"
       }
     },
-    "factory": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1794490541,
-        "narHash": "sha256-c4gIpCQqKFShAXggkvs/zPNVtCHuQ6lmPIRE9BL3pcQ=",
-        "ref": "refs/heads/main",
-        "rev": "1e452780f5299e369d5141b1247f66d71fd287f8",
-        "revCount": 104,
-        "type": "git",
-        "url": "ssh://git@github.com/LeVraiBaptiste/factory"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/LeVraiBaptiste/factory"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -139,7 +119,6 @@
       "inputs": {
         "claude-foreman": "claude-foreman",
         "disko": "disko",
-        "factory": "factory",
         "gamepad-desktop": "gamepad-desktop",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",

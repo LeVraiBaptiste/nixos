@@ -1,4 +1,4 @@
-# OVH dedicated server — WireGuard hub, Caddy ingress, factory (internet-facing)
+# OVH dedicated server — WireGuard hub, Caddy ingress (internet-facing)
 { config, lib, pkgs, ... }:
 let
   vars = import ../../vars.nix;
@@ -10,7 +10,6 @@ in
     ../../modules/nixos/nix.nix
     ../../modules/nixos/locale.nix
     ../../modules/nixos/ssh.nix
-    ../../modules/nixos/docker.nix
     ../../modules/nixos/edge.nix
   ];
 
@@ -142,25 +141,11 @@ in
     isNormalUser = true;
     description = "bat";
     shell = pkgs.bash;
-    extraGroups = [ "wheel" "docker" ];
+    extraGroups = [ "wheel" ];
   };
 
   # Passwordless sudo — key-only SSH is the auth boundary
   security.sudo.wheelNeedsPassword = false;
-
-  # factory's `kamal` network and SeaweedFS container are Docker objects
-  # (the default backend for stateVersion >= 22.05 is podman)
-  virtualisation.oci-containers.backend = "docker";
-
-  # factory (github.com/LeVraiBaptiste/factory) — the module comes from the flake input.
-  # It owns the Caddy vhosts, Postgres, SeaweedFS and the `deploy` user;
-  # Kamal (factory CI over SSH) owns the app containers.
-  # Secrets: /var/lib/factory/app.env, written by hand (factory's docs/deploy.md).
-  services.factory = {
-    enable = true;
-    # Public half of the CI key (private half = GitHub secret DEPLOY_SSH_KEY)
-    deployKeys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILeP9AuGrk5c1PoYH4dtrgPKgKrTLIw64FJjmAqCYDZY factory-ci-deploy" ];
-  };
 
   # Fish shell + starship for server
   programs.fish.enable = true;
@@ -214,11 +199,11 @@ in
     curl
     wget
     tmux
-    docker-compose
   ];
 
-  # No local rebuild alias: evaluating needs the private factory repo, which only
-  # the desktop can clone. Deploy from the desktop (see CLAUDE.md).
+  programs.fish.shellAliases = {
+    rebuild-remote = "sudo nixos-rebuild switch --flake /etc/nixos#remote";
+  };
 
   system.stateVersion = "24.11";
 }

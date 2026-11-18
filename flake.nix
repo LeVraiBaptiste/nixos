@@ -35,16 +35,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Private repo — cloned over SSH with the user's key at evaluation time,
-    # so rebuild remote without `sudo` in front (see CLAUDE.md)
-    factory = {
-      url = "git+ssh://git@github.com/LeVraiBaptiste/factory";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
 };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, factory, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, ... }:
     let
       system = "x86_64-linux";
 
@@ -104,7 +97,6 @@
         modules = [
           ./hosts/remote
           disko.nixosModules.disko
-          factory.nixosModules.default
         ];
       };
     };
