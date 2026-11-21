@@ -35,11 +35,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-};
+    # Personal values (domain, public IP, identities). The committed default holds
+    # placeholders; scripts/rebuild.sh decrypts private/vars.yaml and overrides it.
+    private = {
+      url = "path:./private/example";
+      flake = false;
+    };
+  };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, private, ... }:
     let
       system = "x86_64-linux";
+
+      # vars.nix + the personal values on top
+      vars = nixpkgs.lib.recursiveUpdate
+        (import ./vars.nix)
+        (builtins.fromJSON (builtins.readFile "${private}/vars.json"));
+
+      # Refuse to build with the placeholders (would deploy example.com / 203.0.113.10)
+      guardPlaceholders = {
+        assertions = [{
+          assertion = !vars.placeholder;
+          message = "Built with placeholder personal values: use scripts/rebuild.sh (decrypts private/vars.yaml).";
+        }];
+      };
 
       pkgs-unstable = import nixpkgs {
         inherit system;
@@ -51,7 +70,7 @@
       };
 
       sharedSpecialArgs = {
-        inherit pkgs-unstable inputs;
+        inherit pkgs-unstable inputs vars;
       };
     in
     {
@@ -63,6 +82,7 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/desktop
+          guardPlaceholders
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;
@@ -76,6 +96,7 @@
         specialArgs = sharedSpecialArgs;
         modules = [
           ./hosts/laptop
+          guardPlaceholders
           home-manager.nixosModules.home-manager
           {
             home-manager.useUserPackages = true;
@@ -86,16 +107,20 @@
 
       nixosConfigurations.server = nixpkgs.lib.nixosSystem {
         inherit system;
+        specialArgs = { inherit vars; };
         modules = [
           ./hosts/server
+          guardPlaceholders
           sops-nix.nixosModules.sops
         ];
       };
 
       nixosConfigurations.remote = nixpkgs.lib.nixosSystem {
         inherit system;
+        specialArgs = { inherit vars; };
         modules = [
           ./hosts/remote
+          guardPlaceholders
           disko.nixosModules.disko
         ];
       };

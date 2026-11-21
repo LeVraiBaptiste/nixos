@@ -2,10 +2,11 @@
 
 ## System Commands
 
-- `sudo nixos-rebuild switch --flake /etc/nixos#desktop` - Rebuild and apply desktop configuration
-- `sudo nixos-rebuild switch --flake /etc/nixos#laptop` - Rebuild and apply laptop configuration
-- `sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-elevate-password` - Deploy server configuration
-- `sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-elevate-password` - Deploy remote configuration
+Always rebuild through `scripts/rebuild.sh` (fish alias `rebuild`): it decrypts the personal values (`private/vars.yaml`) and passes them as `--override-input private`. A plain `nixos-rebuild` uses the placeholders in `private/example/` and fails on an assertion.
+
+- `rebuild` - Rebuild and apply the current host (desktop or laptop)
+- `rebuild server` / `rebuild remote` - Deploy over SSH (uses the `server`/`remote` ssh aliases)
+- `rebuild-all` - Current host, then server, then remote
 
 ## Code Style Guidelines
 
@@ -34,7 +35,8 @@
 - `models/` - Whisper model files (ggml-base, ggml-medium, ggml-large-v3-turbo)
 - `overlays/` - Nix overlays (claude-code)
 - `docs/` - Documentation (architecture, wireguard setup, secrets)
-- `vars.nix` - Shared non-secret values (domain, IPs, ports, public keys), committed
+- `vars.nix` - Shared non-secret values (LAN/WireGuard IPs, ports, public keys), committed
+- `private/` - Personal values read at evaluation (domain, public IP, git identities, emails): `vars.yaml` sops-encrypted, `example/vars.json` placeholders (default flake input)
 - `secrets/` - sops-encrypted secrets (`sops secrets/server.yaml` to edit, recipients in `.sops.yaml`, see `docs/secrets.md`)
 
 ## Environment

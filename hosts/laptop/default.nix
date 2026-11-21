@@ -1,7 +1,4 @@
-{ config, pkgs, ... }:
-let
-  vars = import ../../vars.nix;
-in
+{ config, pkgs, vars, ... }:
 {
   networking.hostName = "laptop";
   imports = [

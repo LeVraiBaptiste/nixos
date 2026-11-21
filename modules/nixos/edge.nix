@@ -1,9 +1,8 @@
 # Public ingress — native Caddy owns 80/443 on remote.
-# Base config: relay *.example.com to the server's Caddy over WireGuard.
+# Base config: relay *.<domain> to the server's Caddy over WireGuard.
 # Apps hosted on remote add their own services.caddy.virtualHosts.
-{ lib, ... }:
+{ lib, vars, ... }:
 let
-  vars = import ../../vars.nix;
 
   # Subdomains served by the home server (routed there by its own Caddy)
   serverSubdomains = [

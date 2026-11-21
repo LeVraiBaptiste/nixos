@@ -1,0 +1,22 @@
+{
+  "placeholder": true,
+  "domain": "example.com",
+  "wireguard": { "remoteEndpoint": "203.0.113.10" },
+  "remote": {
+    "mac": "00:00:00:00:00:00",
+    "ipv4": "203.0.113.10/24",
+    "ipv4Gateway": "203.0.113.254",
+    "ipv6": "2001:db8::1/128",
+    "ipv6Gateway": "2001:db8::ff",
+    "dns": "9.9.9.9"
+  },
+  "git": {
+    "personal": { "name": "Jane Doe", "email": "jane@example.com" },
+    "work": { "name": "Jane Doe", "email": "jane@work.example.com" }
+  },
+  "smtp": {
+    "username": "jane@example.com",
+    "sender": "Auth <jane@example.com>"
+  },
+  "authelia": { "users": { "bat": { "email": "bat@example.com" } } }
+}

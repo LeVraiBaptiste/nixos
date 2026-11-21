@@ -1,6 +1,6 @@
 # Shared, non-secret values (committed). Secrets live in secrets/*.yaml (sops).
+# Personal values (domain, public IP, identities) are merged on top from private/ (see flake.nix).
 {
-  domain = "example.com";
   timezone = "Europe/Paris";
 
   wireguard = {
@@ -9,7 +9,6 @@
     server = "10.10.0.3";
     phone = "10.10.0.4";
     laptop = "10.10.0.5";
-    remoteEndpoint = "203.0.113.10";
     listenPort = 51820;
     publicKeys = {
       remote = "ejj87LpGCf9mrplg7Cg7kiEqRz8Zf55Ub5X2IZh44Aw=";
@@ -41,13 +40,7 @@
     serverCountries = "Netherlands";
   };
 
-  smtp = {
-    username = "jane@example.com";
-    sender = "Auth <jane@example.com>";
-  };
-
   authelia.users.bat = {
     displayname = "Bat";
-    email = "bat@example.com";
   };
 }

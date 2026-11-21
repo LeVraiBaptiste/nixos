@@ -1,6 +1,5 @@
-{ ... }:
+{ vars, ... }:
 let
-  vars = import ../../vars.nix;
   # "At home" = the server (always on, wired) answers on the LAN. Not the desktop: it may be asleep.
   # Runs via $SHELL (fish), hence bash for /dev/tcp.
   atHome = "timeout 1 bash -c '</dev/tcp/192.168.1.62/22' 2>/dev/null";
@@ -30,7 +29,7 @@ in
           user = "bat";
         };
         remote = {
-          hostname = "203.0.113.10";
+          hostname = vars.wireguard.remoteEndpoint;
           user = "bat";
         };
       };

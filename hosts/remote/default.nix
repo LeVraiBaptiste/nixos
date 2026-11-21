@@ -1,8 +1,5 @@
 # OVH dedicated server — WireGuard hub, Caddy ingress (internet-facing)
-{ config, lib, pkgs, ... }:
-let
-  vars = import ../../vars.nix;
-in
+{ config, lib, pkgs, vars, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -58,16 +55,16 @@ in
   systemd.services.systemd-networkd.serviceConfig.LoadCredential = lib.mkForce [];
 
   systemd.network.networks."10-wan" = {
-    matchConfig.MACAddress = "00:00:00:00:00:00";
+    matchConfig.MACAddress = vars.remote.mac;
     address = [
-      "203.0.113.10/24"
-      "2001:db8::1/128"
+      vars.remote.ipv4
+      vars.remote.ipv6
     ];
     routes = [
-      { Gateway = "203.0.113.254"; }
-      { Gateway = "2001:db8::ff"; }
+      { Gateway = vars.remote.ipv4Gateway; }
+      { Gateway = vars.remote.ipv6Gateway; }
     ];
-    dns = [ "9.9.9.9" ];
+    dns = [ vars.remote.dns ];
   };
 
   # IP forwarding — relay traffic between WireGuard peers
@@ -202,7 +199,7 @@ in
   ];
 
   programs.fish.shellAliases = {
-    rebuild-remote = "sudo nixos-rebuild switch --flake /etc/nixos#remote";
+    rebuild-remote = "/etc/nixos/scripts/rebuild.sh";
   };
 
   system.stateVersion = "24.11";

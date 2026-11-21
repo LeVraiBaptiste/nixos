@@ -1,5 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, vars, ... }:
 let
+  inherit (vars.git) personal work;
   myScript = builtins.readFile ../../scripts/folderSelect.sh;
 in
 {
@@ -15,18 +16,18 @@ in
     # Git credentials per directory
     home.file = {
       "Documents/work/.envrc".text = ''
-        export GIT_AUTHOR_NAME="Jane Doe"
-        export GIT_AUTHOR_EMAIL="jane@work.example.com"
-        export GIT_COMMITTER_NAME="Jane Doe"
-        export GIT_COMMITTER_EMAIL="jane@work.example.com"
+        export GIT_AUTHOR_NAME="${work.name}"
+        export GIT_AUTHOR_EMAIL="${work.email}"
+        export GIT_COMMITTER_NAME="${work.name}"
+        export GIT_COMMITTER_EMAIL="${work.email}"
       '';
       "Documents/work/.folderSelect.sh".text = myScript;
 
       "Documents/self/.envrc".text = ''
-        export GIT_AUTHOR_NAME="LeVraiBaptiste"
-        export GIT_AUTHOR_EMAIL="jane@example.com"
-        export GIT_COMMITTER_NAME="LeVraiBaptiste"
-        export GIT_COMMITTER_EMAIL="jane@example.com"
+        export GIT_AUTHOR_NAME="${personal.name}"
+        export GIT_AUTHOR_EMAIL="${personal.email}"
+        export GIT_COMMITTER_NAME="${personal.name}"
+        export GIT_COMMITTER_EMAIL="${personal.email}"
       '';
       "Documents/self/.folderSelect.sh".text = myScript;
     };
@@ -35,8 +36,8 @@ in
       enable = true;
       settings = {
         user = {
-          name = "LeVraiBaptiste";
-          email = "jane@example.com";
+          name = personal.name;
+          email = personal.email;
         };
       };
       includes = [
@@ -44,8 +45,8 @@ in
           condition = "gitdir:~/Documents/work/";
           contents = {
             user = {
-              name = "Jane Doe";
-              email = "jane@work.example.com";
+              name = work.name;
+              email = work.email;
             };
           };
         }
@@ -53,8 +54,8 @@ in
           condition = "gitdir:~/Documents/self/";
           contents = {
             user = {
-              name = "LeVraiBaptiste";
-              email = "jane@example.com";
+              name = personal.name;
+              email = personal.email;
             };
           };
         }

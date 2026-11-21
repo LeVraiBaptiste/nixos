@@ -5,7 +5,7 @@ Manual steps required after deploying the NixOS configs.
 ## Topology
 
 ```
-            Remote (203.0.113.10)
+            Remote (<remote-ip>)
             Hub WireGuard (10.10.0.1:51820)
             ip_forward=1
               │         │          │          │
@@ -49,7 +49,7 @@ Order matters to minimize downtime:
 sudo nixos-rebuild switch --flake /etc/nixos#desktop
 
 # 2. Remote second (updates peer list — Server tunnel breaks momentarily)
-sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@203.0.113.10 --sudo --ask-sudo-password
+sudo nixos-rebuild switch --flake /etc/nixos#remote --target-host bat@<remote-ip> --sudo --ask-sudo-password
 
 # 3. Server third (from LAN — Server moves to .3, tunnel re-establishes)
 sudo nixos-rebuild switch --flake /etc/nixos#server --target-host bat@192.168.1.62 --sudo --ask-sudo-password
@@ -87,7 +87,7 @@ ping 10.10.0.2      # reaches desktop via remote
 ## 5. Verify Caddy
 
 ```bash
-curl http://203.0.113.10    # should return HA login page (proxied to 10.10.0.3:8123)
+curl http://<remote-ip>    # should return HA login page (proxied to 10.10.0.3:8123)
 ```
 
 ## 6. SSH access without WireGuard
@@ -96,15 +96,15 @@ From a machine without WireGuard, use SSH ProxyJump through Remote:
 
 ```bash
 # Direct jump
-ssh -J bat@203.0.113.10 bat@10.10.0.2    # → Desktop
-ssh -J bat@203.0.113.10 bat@10.10.0.3    # → Server
+ssh -J bat@<remote-ip> bat@10.10.0.2    # → Desktop
+ssh -J bat@<remote-ip> bat@10.10.0.3    # → Server
 ```
 
 Or add to `~/.ssh/config`:
 
 ```
 Host remote
-  HostName 203.0.113.10
+  HostName <remote-ip>
   User bat
 
 Host desktop
@@ -130,7 +130,7 @@ ssh server "wol <desktop-mac-address>"
 
 For services to resolve correctly everywhere:
 
-1. **DNS public** (registrar/Cloudflare): `ha.yourdomain.com A 203.0.113.10`
+1. **DNS public** (registrar/Cloudflare): `ha.yourdomain.com A <remote-ip>`
 2. **DNS local** (router host override): `ha.yourdomain.com → 192.168.1.62`
 
 On LAN, traffic goes directly to Server. Externally, it goes through Remote's Caddy → WG tunnel → Server.

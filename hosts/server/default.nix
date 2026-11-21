@@ -1,8 +1,5 @@
 # Dell T330 — headless Docker host, managed via SSH
-{ config, lib, pkgs, ... }:
-let
-  vars = import ../../vars.nix;
-in
+{ config, lib, pkgs, vars, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -264,7 +261,7 @@ in
   ];
 
   programs.fish.shellAliases = {
-    rebuild-server = "sudo nixos-rebuild switch --flake /etc/nixos#server";
+    rebuild-server = "/etc/nixos/scripts/rebuild.sh";
   };
 
   system.stateVersion = "24.11";
