@@ -1,0 +1,6 @@
+# vulnix false positives, see https://github.com/nix-community/vulnix#whitelisting
+# A package name or name-version, with the CVEs to ignore (all of them if `cve` is omitted):
+#
+# ["Diff-1.0.2"]
+# cve = ["CVE-2024-13278"]
+# comment = "Haskell library, the CVE is about the Drupal Diff module"

@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Also dispatched by update.yml: PRs opened with GITHUB_TOKEN don't trigger workflows
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # Tools come from the locked nixpkgs, same versions as locally
+      - name: nixfmt
+        run: git ls-files -z '*.nix' | xargs -0 nix run --inputs-from . nixpkgs#nixfmt -- --check
+      - name: statix
+        run: nix run --inputs-from . nixpkgs#statix -- check .
+      - name: deadnix
+        run: nix run --inputs-from . nixpkgs#deadnix -- --no-lambda-pattern-names --no-lambda-arg --fail .
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # scan the whole history
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: gitleaks
+        run: nix run --inputs-from . nixpkgs#gitleaks -- git --redact --no-banner .
+      - name: sops files are encrypted
+        run: nix shell --inputs-from . nixpkgs#sops -c scripts/ci/check-sops-encrypted.sh
+
+  eval:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [desktop, laptop, server, remote]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Evaluate ${{ matrix.host }}
+        run: scripts/ci/eval-host.sh ${{ matrix.host }}

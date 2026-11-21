@@ -1,0 +1,75 @@
+name: vulnix
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [desktop, laptop, server, remote]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan ${{ matrix.host }}
+        run: |
+          drv=$(scripts/ci/eval-host.sh ${{ matrix.host }})
+          nix build --inputs-from . nixpkgs#vulnix -o "$RUNNER_TEMP/vulnix"
+          # The NVD download times out now and then. Exit code 2 = vulnerabilities found.
+          for _ in 1 2 3; do
+            rc=0
+            "$RUNNER_TEMP/vulnix/bin/vulnix" --json -w .github/vulnix-whitelist.toml "$drv" > vulnix.json || rc=$?
+            [ "$rc" -le 2 ] && break
+            echo "vulnix failed (rc=$rc), retrying"; sleep 30
+          done
+          [ "$rc" -le 2 ]
+          python3 scripts/ci/vulnix-report.py ${{ matrix.host }} vulnix.json > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vulnix-${{ matrix.host }}
+          path: report.md
+
+  # One issue kept up to date with the latest report
+  report:
+    needs: scan
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: vulnix-*
+      - name: Update issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          {
+            echo "Weekly [vulnix](https://github.com/nix-community/vulnix) scan, $(date -u +%F) ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))."
+            echo
+            echo "It matches the derivation closure (build-time dependencies included) against NVD by name and version, so expect false positives. Silence them in \`.github/vulnix-whitelist.toml\`."
+            echo
+            for h in desktop laptop server remote; do
+              cat "vulnix-$h/report.md" 2>/dev/null || printf '## %s\n\n:x: scan failed\n\n' "$h"
+            done
+          } > body.md
+          gh label create vulnix --color B60205 --description "Weekly vulnerability report" 2>/dev/null || true
+          issue=$(gh issue list --label vulnix --state open --json number --jq '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --body-file body.md
+          else
+            gh issue create --title "Vulnerability report" --label vulnix --body-file body.md
+          fi

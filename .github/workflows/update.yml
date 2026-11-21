@@ -1,0 +1,107 @@
+name: update
+
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Monday 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write # dispatch ci.yml on the update branch
+
+env:
+  HOSTS: desktop laptop server remote
+
+jobs:
+  flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Evaluate current lock
+        run: |
+          for h in $HOSTS; do
+            scripts/ci/eval-host.sh "$h" > "$RUNNER_TEMP/old-$h"
+          done
+
+      - name: Update flake.lock
+        run: nix flake update 2>&1 | tee "$RUNNER_TEMP/update.log"
+
+      - name: Evaluate new lock and diff
+        run: |
+          body="$RUNNER_TEMP/body.md"
+          {
+            echo "Weekly \`nix flake update\`."
+            echo
+            echo '```'
+            grep -E "Updated input|→|'github:" "$RUNNER_TEMP/update.log" || true
+            echo '```'
+            echo
+            echo "Package changes per host (from the derivation closures, build-time dependencies included):"
+            echo
+          } > "$body"
+          for h in $HOSTS; do
+            echo "<details><summary>$h</summary>" >> "$body"
+            echo >> "$body"
+            if new=$(scripts/ci/eval-host.sh "$h"); then
+              python3 scripts/ci/closure-diff.py "$(cat "$RUNNER_TEMP/old-$h")" "$new" >> "$body"
+            else
+              echo ":x: **$h does not evaluate with the new lock.**" >> "$body"
+            fi
+            echo >> "$body"
+            echo "</details>" >> "$body"
+          done
+
+      - id: pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update/flake-lock
+          commit-message: "chore: update flake.lock"
+          title: "chore: update flake.lock"
+          body-path: ${{ runner.temp }}/body.md
+          add-paths: flake.lock
+          delete-branch: true
+
+      - name: Run ci on the PR
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref update/flake-lock
+
+  orca-ide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: update
+        name: nix-update orca-ide
+        run: |
+          old=$(nix eval --raw .#orca-ide.version)
+          nix run --inputs-from . nixpkgs#nix-update -- --flake orca-ide --override-filename overlays/orca-ide.nix
+          new=$(nix eval --raw .#orca-ide.version)
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+
+      - id: pr
+        if: steps.update.outputs.old != steps.update.outputs.new
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update/orca-ide
+          commit-message: "chore: orca-ide ${{ steps.update.outputs.old }} -> ${{ steps.update.outputs.new }}"
+          title: "chore: orca-ide ${{ steps.update.outputs.old }} -> ${{ steps.update.outputs.new }}"
+          body: "Release notes: https://github.com/stablyai/orca/releases/tag/v${{ steps.update.outputs.new }}"
+          add-paths: overlays/orca-ide.nix
+          delete-branch: true
+
+      - name: Run ci on the PR
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref update/orca-ide
