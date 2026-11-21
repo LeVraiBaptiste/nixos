@@ -32,7 +32,7 @@ Always rebuild through `scripts/rebuild.sh` (fish alias `rebuild`): it decrypts 
     - `ghostty.conf`, `kitty.conf`, `lazygit.yml`, `tmux.conf` - Terminal/tool configs
     - `server/` - Server docker-compose and Caddyfile
 - `scripts/` - Shell/Python scripts (dictation, whisper speech-to-text, HA config backup, IPMI fan control)
-    - `ci/` - Helpers for the GitHub workflows (`eval-host.sh` evaluates a host with the placeholder values)
+    - `ci/` - Helpers for the GitHub workflows (`eval-host.sh` evaluates a host with the placeholder values, `runtime-drvs.py` estimates its runtime closure for vulnix)
     - `check-private-leaks.sh` - pre-commit hook (`.githooks/`), refuses staged values from `private/vars.yaml`
 - `.github/workflows/` - `ci.yml` (nixfmt/statix/deadnix, gitleaks, sops check, eval), `update.yml` (weekly flake.lock + orca-ide PRs), `vulnix.yml` (weekly CVE issue)
 - `models/` - Whisper model files (ggml-base, ggml-medium, ggml-large-v3-turbo)

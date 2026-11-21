@@ -33,7 +33,9 @@ jobs:
             echo "vulnix failed (rc=$rc), retrying"; sleep 30
           done
           [ "$rc" -le 2 ]
-          python3 scripts/ci/vulnix-report.py ${{ matrix.host }} vulnix.json > report.md
+          # Keep what is installed, not the compilers and build tools
+          python3 scripts/ci/runtime-drvs.py "$drv" > runtime.txt
+          python3 scripts/ci/vulnix-report.py ${{ matrix.host }} vulnix.json runtime.txt > report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
@@ -60,7 +62,7 @@ jobs:
           {
             echo "Weekly [vulnix](https://github.com/nix-community/vulnix) scan, $(date -u +%F) ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))."
             echo
-            echo "It matches the derivation closure (build-time dependencies included) against NVD by name and version, so expect false positives. Silence them in \`.github/vulnix-whitelist.toml\`."
+            echo "Only packages in the runtime closure are listed (estimated from cache.nixos.org, see \`scripts/ci/runtime-drvs.py\`). Matching is by name and version against NVD and doesn't see nixpkgs patches, so expect false positives. Silence them in \`.github/vulnix-whitelist.toml\`."
             echo
             for h in desktop laptop server remote; do
               cat "vulnix-$h/report.md" 2>/dev/null || printf '## %s\n\n:x: scan failed\n\n' "$h"

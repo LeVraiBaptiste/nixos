@@ -1,10 +1,32 @@
 #!/usr/bin/env python3
-"""Turn `vulnix --json` output into a Markdown section, highest CVSS first."""
+"""Turn `vulnix --json` output into a Markdown section, highest CVSS first.
+
+Usage: vulnix-report.py host vulnix.json [runtime-drvs.txt]
+With the output of runtime-drvs.py, only packages in the runtime closure are
+listed, the others are just counted.
+"""
 import json
+import re
 import sys
 
 host, path = sys.argv[1], sys.argv[2]
-findings = [f for f in json.load(open(path)) if f["affected_by"]]
+# fish completions generated from a package's man pages repeat its findings
+findings = [
+    f
+    for f in json.load(open(path))
+    if f["affected_by"] and not f["name"].endswith("_fish-completions")
+]
+
+build_only = 0
+if len(sys.argv) > 3:
+    # Match on name-version: vulnix keeps one .drv per name, not always the one installed
+    runtime = {
+        re.sub(r"^/nix/store/[a-z0-9]+-|\.drv$", "", line.strip())
+        for line in open(sys.argv[3])
+    }
+    kept = [f for f in findings if f["name"] in runtime]
+    build_only = len(findings) - len(kept)
+    findings = kept
 
 
 def worst(f):
@@ -14,12 +36,14 @@ def worst(f):
 findings.sort(key=worst, reverse=True)
 high = sum(1 for f in findings if worst(f) >= 7)
 
+extra = f" {build_only} more only in build dependencies." if build_only else ""
+
 print(f"## {host}\n")
 if not findings:
-    print("No known vulnerability.\n")
+    print(f"No known vulnerability.{extra}\n")
     sys.exit()
 
-print(f"{len(findings)} affected packages, {high} with a CVSS ≥ 7.\n")
+print(f"{len(findings)} affected packages, {high} with a CVSS ≥ 7.{extra}\n")
 print("<details><summary>Details</summary>\n")
 print("| CVSS | Package | CVEs |")
 print("|---|---|---|")

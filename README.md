@@ -80,7 +80,7 @@ see `scripts/ci/eval-host.sh`), and nothing is built.
 |----------|------|------|
 | [`ci.yml`](.github/workflows/ci.yml) | push, PR | nixfmt, statix, deadnix; gitleaks over the whole history; sops files really encrypted; every host evaluates |
 | [`update.yml`](.github/workflows/update.yml) | weekly | PR updating `flake.lock`, with the package changes per host; PR bumping `orca-ide` with nix-update |
-| [`vulnix.yml`](.github/workflows/vulnix.yml) | weekly | vulnix scan of every host, kept in an issue labelled `vulnix` (informative, never blocking) |
+| [`vulnix.yml`](.github/workflows/vulnix.yml) | weekly | vulnix scan of every host's runtime closure, kept in an issue labelled `vulnix` (informative, never blocking) |
 
 Dependabot keeps the actions up to date.
 
