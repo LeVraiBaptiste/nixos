@@ -1,5 +1,10 @@
 # Docker Compose deployment — single compose project per host
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   options.homelab.compose.files = lib.mkOption {
     type = lib.types.attrsOf lib.types.path;
@@ -7,8 +12,9 @@
   };
 
   config = {
-    environment.etc."docker-compose".source = pkgs.linkFarm "compose"
-      (lib.mapAttrsToList (name: path: { inherit name path; }) config.homelab.compose.files);
+    environment.etc."docker-compose".source = pkgs.linkFarm "compose" (
+      lib.mapAttrsToList (name: path: { inherit name path; }) config.homelab.compose.files
+    );
 
     systemd.services.docker-compose = {
       description = "Docker Compose services";

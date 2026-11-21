@@ -43,21 +43,34 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, home-manager, disko, sops-nix, zen-browser, claude-foreman, private, ... }:
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      home-manager,
+      disko,
+      sops-nix,
+      zen-browser,
+      claude-foreman,
+      private,
+      ...
+    }:
     let
       system = "x86_64-linux";
 
       # vars.nix + the personal values on top
-      vars = nixpkgs.lib.recursiveUpdate
-        (import ./vars.nix)
-        (builtins.fromJSON (builtins.readFile "${private}/vars.json"));
+      vars = nixpkgs.lib.recursiveUpdate (import ./vars.nix) (
+        builtins.fromJSON (builtins.readFile "${private}/vars.json")
+      );
 
       # Refuse to build with the placeholders (would deploy example.com / 203.0.113.10)
       guardPlaceholders = {
-        assertions = [{
-          assertion = !vars.placeholder;
-          message = "Built with placeholder personal values: use scripts/rebuild.sh (decrypts private/vars.yaml).";
-        }];
+        assertions = [
+          {
+            assertion = !vars.placeholder;
+            message = "Built with placeholder personal values: use scripts/rebuild.sh (decrypts private/vars.yaml).";
+          }
+        ];
       };
 
       pkgs-unstable = import nixpkgs {

@@ -7,11 +7,14 @@ let
   activeModelLink = "${stateDir}/model.bin";
   defaultModel = "${modelsDir}/ggml-large-v3-turbo.bin";
 
-  llmPromptFile = pkgs.writeText "dictation-llm-prompt.txt"
-    (builtins.readFile ../../scripts/dictation-llm-prompt.txt);
+  llmPromptFile = pkgs.writeText "dictation-llm-prompt.txt" (
+    builtins.readFile ../../scripts/dictation-llm-prompt.txt
+  );
 
   dictateScript = pkgs.writeShellScriptBin "dictate" (builtins.readFile ../../scripts/dictate.sh);
-  setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (builtins.readFile ../../scripts/setup-whisper-models.sh);
+  setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (
+    builtins.readFile ../../scripts/setup-whisper-models.sh
+  );
   speechToTextScript = pkgs.writeScriptBin "speech-to-text" ''
     #!${pkgs.python3}/bin/python3
     import os
@@ -22,7 +25,9 @@ let
     #!${pkgs.python3}/bin/python3
     ${builtins.readFile ../../scripts/whisper-client.py}
   '';
-  whisperModelScript = pkgs.writeShellScriptBin "whisper-model" (builtins.readFile ../../scripts/whisper-model.sh);
+  whisperModelScript = pkgs.writeShellScriptBin "whisper-model" (
+    builtins.readFile ../../scripts/whisper-model.sh
+  );
 in
 {
   environment.systemPackages = with pkgs; [
@@ -54,7 +59,10 @@ in
       Restart = "on-failure";
       RestartSec = 5;
       ConditionPathExists = activeModelLink;
-      SupplementaryGroups = [ "video" "render" ];
+      SupplementaryGroups = [
+        "video"
+        "render"
+      ];
     };
   };
 

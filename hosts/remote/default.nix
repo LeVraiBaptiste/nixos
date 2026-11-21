@@ -1,5 +1,11 @@
 # OVH dedicated server — WireGuard hub, Caddy ingress (internet-facing)
-{ config, lib, pkgs, vars, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  vars,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -32,7 +38,10 @@
   };
 
   # Serial console for IPMI/SoL
-  boot.kernelParams = [ "console=tty0" "console=ttyS0,115200n8" ];
+  boot.kernelParams = [
+    "console=tty0"
+    "console=ttyS0,115200n8"
+  ];
 
   networking.hostName = "remote";
 
@@ -52,7 +61,7 @@
   systemd.network.wait-online.enable = false;
 
   # Workaround: systemd 260+ networkd fails with exit 243/CREDENTIALS on restart
-  systemd.services.systemd-networkd.serviceConfig.LoadCredential = lib.mkForce [];
+  systemd.services.systemd-networkd.serviceConfig.LoadCredential = lib.mkForce [ ];
 
   systemd.network.networks."10-wan" = {
     matchConfig.MACAddress = vars.remote.mac;

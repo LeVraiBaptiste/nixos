@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.services.dictation-client;
   remoteHosts = lib.concatStringsSep " " cfg.remoteHosts;
@@ -10,8 +15,9 @@ let
   activeModelLink = "${stateDir}/model.bin";
   defaultModel = "${modelsDir}/ggml-base.bin";
 
-  llmPromptFile = pkgs.writeText "dictation-llm-prompt.txt"
-    (builtins.readFile ../../scripts/dictation-llm-prompt.txt);
+  llmPromptFile = pkgs.writeText "dictation-llm-prompt.txt" (
+    builtins.readFile ../../scripts/dictation-llm-prompt.txt
+  );
 
   dictateScript = pkgs.writeShellScriptBin "dictate" ''
     export WHISPER_REMOTE_HOSTS="${remoteHosts}"
@@ -24,12 +30,16 @@ let
     os.environ.setdefault("WHISPER_REMOTE_HOSTS", "${remoteHosts}")
     ${builtins.readFile ../../scripts/speech-to-text.py}
   '';
-  setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (builtins.readFile ../../scripts/setup-whisper-models.sh);
+  setupModelsScript = pkgs.writeShellScriptBin "setup-whisper-models" (
+    builtins.readFile ../../scripts/setup-whisper-models.sh
+  );
   whisperClientScript = pkgs.writeScriptBin "whisper-client" ''
     #!${pkgs.python3}/bin/python3
     ${builtins.readFile ../../scripts/whisper-client.py}
   '';
-  whisperModelScript = pkgs.writeShellScriptBin "whisper-model" (builtins.readFile ../../scripts/whisper-model.sh);
+  whisperModelScript = pkgs.writeShellScriptBin "whisper-model" (
+    builtins.readFile ../../scripts/whisper-model.sh
+  );
 in
 {
   options.services.dictation-client = {

@@ -1,4 +1,9 @@
-{ config, pkgs, vars, ... }:
+{
+  config,
+  pkgs,
+  vars,
+  ...
+}:
 {
   networking.hostName = "laptop";
   imports = [
@@ -45,19 +50,24 @@
   networking.wireguard.interfaces.wg0 = {
     ips = [ "${vars.wireguard.laptop}/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
-    peers = [{
-      publicKey = vars.wireguard.publicKeys.remote;
-      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-      allowedIPs = [ "10.10.0.0/24" ];
-      persistentKeepalive = 25;
-    }];
+    peers = [
+      {
+        publicKey = vars.wireguard.publicKeys.remote;
+        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
+        allowedIPs = [ "10.10.0.0/24" ];
+        persistentKeepalive = 25;
+      }
+    ];
   };
 
   # Wake-on-LAN
   environment.systemPackages = with pkgs; [ wol ];
 
   # Remote desktop for GPU-accelerated dictation: LAN at home, WireGuard elsewhere
-  services.dictation-client.remoteHosts = [ "desktop.local.com" vars.wireguard.desktop ];
+  services.dictation-client.remoteHosts = [
+    "desktop.local.com"
+    vars.wireguard.desktop
+  ];
 
   # GNOME Desktop Environment
   services.xserver.enable = true;
@@ -68,7 +78,13 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "docker"
+      "ydotool"
+      "dialout"
+    ];
   };
 
   # Run unpatched dynamic binaries on NixOS

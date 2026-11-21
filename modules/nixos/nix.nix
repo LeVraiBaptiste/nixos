@@ -1,7 +1,12 @@
-{ ... }:
-{
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.trusted-users = [ "root" "bat" ];
+_: {
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+  nix.settings.trusted-users = [
+    "root"
+    "bat"
+  ];
 
   # Auto garbage-collect old generations
   nix.gc = {
@@ -14,7 +19,7 @@
   nixpkgs = {
     config = {
       allowUnfree = true;
-      allowUnfreePredicate = (_: true);
+      allowUnfreePredicate = _: true;
     };
   };
 }

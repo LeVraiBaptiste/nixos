@@ -36,8 +36,8 @@ in
       enable = true;
       settings = {
         user = {
-          name = personal.name;
-          email = personal.email;
+          inherit (personal) name;
+          inherit (personal) email;
         };
       };
       includes = [
@@ -45,8 +45,8 @@ in
           condition = "gitdir:~/Documents/work/";
           contents = {
             user = {
-              name = work.name;
-              email = work.email;
+              inherit (work) name;
+              inherit (work) email;
             };
           };
         }
@@ -54,8 +54,8 @@ in
           condition = "gitdir:~/Documents/self/";
           contents = {
             user = {
-              name = personal.name;
-              email = personal.email;
+              inherit (personal) name;
+              inherit (personal) email;
             };
           };
         }

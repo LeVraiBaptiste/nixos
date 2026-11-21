@@ -7,8 +7,12 @@
     powerOnBoot = true;
     package = pkgs.bluez;
     settings = {
-      General = { Experimental = true; };
-      Input = { ClassicBondedOnly = false; };
+      General = {
+        Experimental = true;
+      };
+      Input = {
+        ClassicBondedOnly = false;
+      };
     };
     disabledPlugins = [ "sap" ];
   };

@@ -34,14 +34,15 @@ in
   services.caddy = {
     enable = true;
 
-    virtualHosts = lib.genAttrs
-      (map (sub: "${sub}.${vars.domain}") serverSubdomains)
-      (_: { extraConfig = relayToServer; })
-    // {
-      # Catch-all: drop plain-HTTP requests for hosts nobody declared.
-      # Declared hosts keep their automatic HTTP→HTTPS redirect (more specific match).
-      # Unknown hosts on 443 fail the TLS handshake (no certificate).
-      ":80".extraConfig = "abort";
-    };
+    virtualHosts =
+      lib.genAttrs (map (sub: "${sub}.${vars.domain}") serverSubdomains) (_: {
+        extraConfig = relayToServer;
+      })
+      // {
+        # Catch-all: drop plain-HTTP requests for hosts nobody declared.
+        # Declared hosts keep their automatic HTTP→HTTPS redirect (more specific match).
+        # Unknown hosts on 443 fail the TLS handshake (no certificate).
+        ":80".extraConfig = "abort";
+      };
   };
 }

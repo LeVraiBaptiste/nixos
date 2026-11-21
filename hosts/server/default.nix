@@ -1,5 +1,11 @@
 # Dell T330 — headless Docker host, managed via SSH
-{ config, lib, pkgs, vars, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  vars,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -35,7 +41,10 @@
     description = "Dynamic IPMI fan control for Dell T330";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
-    path = [ pkgs.ipmitool pkgs.gawk ];
+    path = [
+      pkgs.ipmitool
+      pkgs.gawk
+    ];
     serviceConfig = {
       ExecStart = "${pkgs.bash}/bin/bash ${../../scripts/ipmi-fan-control.sh}";
       ExecStop = "${pkgs.ipmitool}/bin/ipmitool raw 0x30 0x30 0x01 0x01";
@@ -47,7 +56,10 @@
   # Home Assistant config backup — auto-commit + push to GitHub daily
   systemd.services.ha-config-backup = {
     description = "Backup Home Assistant config to GitHub";
-    path = [ pkgs.git pkgs.openssh ];
+    path = [
+      pkgs.git
+      pkgs.openssh
+    ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash ${../../scripts/ha-config-backup.sh}";
@@ -67,12 +79,14 @@
   networking.wireguard.interfaces.wg0 = {
     ips = [ "${vars.wireguard.server}/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
-    peers = [{
-      publicKey = vars.wireguard.publicKeys.remote;
-      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-      allowedIPs = [ "10.10.0.0/24" ];
-      persistentKeepalive = 25;
-    }];
+    peers = [
+      {
+        publicKey = vars.wireguard.publicKeys.remote;
+        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
+        allowedIPs = [ "10.10.0.0/24" ];
+        persistentKeepalive = 25;
+      }
+    ];
   };
 
   # Service directories
@@ -155,7 +169,9 @@
     templates = {
       "authelia.env" = {
         content = ''
-          AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="${config.sops.placeholder."authelia/jwt_secret"}"
+          AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="${
+            config.sops.placeholder."authelia/jwt_secret"
+          }"
           AUTHELIA_SESSION_SECRET="${config.sops.placeholder."authelia/session_secret"}"
           AUTHELIA_STORAGE_ENCRYPTION_KEY="${config.sops.placeholder."authelia/storage_encryption_key"}"
           AUTHELIA_NOTIFIER_SMTP_PASSWORD="${config.sops.placeholder."authelia/smtp_password"}"
@@ -195,7 +211,11 @@
       80
       443
     ];
-    trustedInterfaces = [ "docker0" "br-+" "wg0" ];
+    trustedInterfaces = [
+      "docker0"
+      "br-+"
+      "wg0"
+    ];
   };
 
   # User account (bash shell required for nixos-rebuild --target-host)
@@ -203,7 +223,11 @@
     isNormalUser = true;
     description = "bat";
     shell = pkgs.bash;
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "docker"
+    ];
   };
 
   # Fish shell + starship for server

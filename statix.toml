@@ -1,0 +1,2 @@
+# Repeated `networking.x = ...` style keys are idiomatic in NixOS modules
+disabled = [ "repeated_keys" ]

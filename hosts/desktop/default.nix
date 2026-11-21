@@ -1,4 +1,9 @@
-{ config, pkgs, vars, ... }:
+{
+  config,
+  pkgs,
+  vars,
+  ...
+}:
 {
   networking.hostName = "desktop";
 
@@ -25,12 +30,14 @@
   networking.wireguard.interfaces.wg0 = {
     ips = [ "${vars.wireguard.desktop}/24" ];
     privateKeyFile = "/etc/wireguard/private.key";
-    peers = [{
-      publicKey = vars.wireguard.publicKeys.remote;
-      endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-      allowedIPs = [ "10.10.0.0/24" ];
-      persistentKeepalive = 25;
-    }];
+    peers = [
+      {
+        publicKey = vars.wireguard.publicKeys.remote;
+        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
+        allowedIPs = [ "10.10.0.0/24" ];
+        persistentKeepalive = 25;
+      }
+    ];
   };
 
   # Orca mobile companion — direct pairing over WireGuard only, never exposed on LAN/WAN
@@ -114,7 +121,13 @@
   users.users.bat = {
     isNormalUser = true;
     description = "bat";
-    extraGroups = [ "networkmanager" "wheel" "docker" "ydotool" "dialout" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "docker"
+      "ydotool"
+      "dialout"
+    ];
   };
 
   # Run unpatched dynamic binaries on NixOS
