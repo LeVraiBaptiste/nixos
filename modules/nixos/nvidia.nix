@@ -41,4 +41,14 @@
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
+
+  # NixOS CUDA team cache: cache.nixos.org ships no CUDA binaries (unfree), so
+  # without it ollama-cuda and whisper-cpp (CUDA) compile locally on each update.
+  # Priority 50 vs 40 for cache.nixos.org, which stays first for everything else.
+  nix.settings = {
+    extra-substituters = [ "https://cache.nixos-cuda.org" ];
+    extra-trusted-public-keys = [
+      "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+    ];
+  };
 }
