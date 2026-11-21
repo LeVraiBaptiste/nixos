@@ -15,7 +15,7 @@ Any one of these keys can decrypt:
 |---------|--------------------------------------------------|
 | desktop | `~/.config/sops/age/keys.txt` on the desktop     |
 | backup  | offline (password manager)                       |
-| laptop  | `~/.ssh/id_ed25519` on the laptop (`private/` only) |
+| laptop  | `~/.config/sops/age/keys.txt` on the laptop (`private/` only) |
 | server  | `/etc/ssh/ssh_host_ed25519_key` on the server    |
 
 ## Common tasks

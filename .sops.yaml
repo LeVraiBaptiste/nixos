@@ -2,7 +2,7 @@
 keys:
   - &desktop age1vm3ahegdztm6zgxfykf0pt43xjadwxz9j9vp8df727zka60ntaeqpth7nk
   - &backup age1prl2cuslk7vj8jjp9yzu5xne9u85q4dya2ymazkcngjjnumz4ueqky3pge
-  - &laptop age13q9za0zkyruj2mmhmz0uguusa2cuzne9kvczgdfy76rzaf42p4vskjhmyg  # laptop's ~/.ssh/id_ed25519, read by sops directly
+  - &laptop age1h6w4ludwz5gxrs5przapudacc7glq6atszmk0an8pxmcf7nad9zs3dfy0e
   - &server age1vw9vjhu0tdlynh5tfh53a8tjl8fqljsyvqhp8at20wt8dz9hagas68h787
 creation_rules:
   # Personal values read at evaluation time (see docs/secrets.md)
