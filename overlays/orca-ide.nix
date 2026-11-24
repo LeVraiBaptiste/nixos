@@ -16,6 +16,10 @@ final: prev: {
     final.appimageTools.wrapType2 {
       inherit pname version src;
 
+      # The FHS sandbox replaces /etc with a whitelist that omits /etc/fish, so fish
+      # in Orca terminals ran without the NixOS config (aliases, interactiveShellInit, starship)
+      extraBwrapArgs = [ "--symlink /.host-etc/fish /etc/fish" ];
+
       extraInstallCommands = ''
         # Install the bundled .desktop entry and icon, pointing Exec at our wrapper
         desktop=$(find ${appimageContents} -maxdepth 1 -name '*.desktop' | head -n1)
