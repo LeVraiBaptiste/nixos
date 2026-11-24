@@ -18,6 +18,97 @@ identities) stay encrypted so the repo can be public.
 `desktop` and `laptop` use home-manager; `server` and `remote` are deployed over SSH
 from a workstation.
 
+## Network
+
+`remote` has the only public IP. Every other machine dials out to it over WireGuard
+(`10.10.0.0/24`), so the home server stays behind NAT with no port forwarded.
+
+```mermaid
+flowchart LR
+    internet(("Internet"))
+
+    subgraph ovh["OVH"]
+        remote["<b>remote</b><br>10.10.0.1<br>Caddy :80/:443<br>WireGuard hub :51820"]
+    end
+
+    subgraph home["Home LAN (NAT)"]
+        server["<b>server</b><br>10.10.0.3<br>Docker services"]
+        desktop["<b>desktop</b><br>10.10.0.2"]
+    end
+
+    laptop["<b>laptop</b><br>10.10.0.5<br>roaming"]
+    phone["<b>phone</b><br>10.10.0.4"]
+
+    internet -- "HTTPS *.domain" --> remote
+    server -. "wg0" .-> remote
+    desktop -. "wg0" .-> remote
+    laptop -. "wg0" .-> remote
+    phone -. "wg0" .-> remote
+```
+
+## Request path
+
+Public traffic for `*.<domain>` hits Caddy on `remote` (Let's Encrypt), which relays it
+through the tunnel to a second Caddy on `server` (`tls internal`). That one routes by
+host, and puts Authelia in front of the services that have no login of their own.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Browser
+    participant E as Caddy (remote)
+    participant C as Caddy (server)
+    participant A as Authelia
+    participant S as Service
+
+    U->>E: HTTPS sonarr.domain
+    E->>C: reverse_proxy over WireGuard (SNI kept)
+    C->>A: forward_auth
+    alt not logged in
+        A-->>U: redirect to auth.domain (2FA)
+    else session valid
+        A-->>C: 200 + Remote-User headers
+        C->>S: localhost:port
+        S-->>U: response
+    end
+```
+
+## Server services
+
+Everything runs from one `docker-compose.yml`, rendered by Nix with the ports from
+`vars.nix`. The download side shares gluetun's network namespace, so it only reaches the
+internet through ProtonVPN.
+
+```mermaid
+flowchart TB
+    wg["wg0 (from remote)"] --> caddy["Caddy"]
+    lan["LAN"] --> caddy
+
+    caddy --> authelia["Authelia"]
+    caddy --> ha["Home Assistant"]
+    caddy --> jellyfin["Jellyfin"]
+    caddy --> abs["Audiobookshelf"]
+    caddy -- "forward_auth" --> protected
+
+    subgraph protected["Behind Authelia"]
+        filebrowser["FileBrowser"]
+        sonarr["Sonarr"]
+        radarr["Radarr"]
+        shelfarr["Shelfarr"]
+
+        subgraph vpn["gluetun network namespace"]
+            qbit["qBittorrent"]
+            prowlarr["Prowlarr"]
+            flare["FlareSolverr"]
+        end
+    end
+
+    vpn == "WireGuard" ==> proton(("ProtonVPN"))
+    qbit --> media[("/srv/media")]
+    media --> jellyfin
+    media --> abs
+```
+
 ## Layout
 
 ```
@@ -43,6 +134,25 @@ Two kinds of data stay out of the clear:
 - **Personal values** (`private/vars.yaml`): domain, public IP, git identities, emails.
   They are needed at evaluation time, so `scripts/rebuild.sh` decrypts them into a tmpfs
   directory and passes it as `--override-input private`.
+
+```mermaid
+flowchart LR
+    subgraph ws["Workstation (eval time)"]
+        vars["vars.nix<br>(committed)"]
+        pv["private/vars.yaml<br>(sops)"] -- "rebuild.sh<br>sops decrypt" --> tmp["tmpfs vars.json"]
+        ex["private/example/<br>(placeholders)"]
+        tmp -- "override-input private" --> flake{{"flake.nix<br>recursiveUpdate"}}
+        ex -. "default input,<br>fails the assertion" .-> flake
+        vars --> flake
+    end
+
+    subgraph target["Target host (activation)"]
+        sec["secrets/server.yaml<br>(still encrypted in the store)"] -- "sops-nix +<br>SSH host key" --> run["/run/secrets<br>+ rendered .env files"]
+        run --> compose["docker-compose"]
+    end
+
+    flake -- "nixos-rebuild switch" --> sec
+```
 
 The default `private` input is `private/example/vars.json`, which only holds placeholders
 (`example.com`, `203.0.113.10`). A host built with it fails an assertion instead of
