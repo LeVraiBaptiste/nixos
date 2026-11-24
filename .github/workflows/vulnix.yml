@@ -69,9 +69,22 @@ jobs:
             done
           } > body.md
           gh label create vulnix --color B60205 --description "Weekly vulnerability report" 2>/dev/null || true
-          issue=$(gh issue list --label vulnix --state open --json number --jq '.[0].number')
-          if [ -n "$issue" ]; then
+          # Clean = every host scanned and nothing left in its runtime closure
+          clean=true
+          for h in desktop laptop server remote; do
+            grep -q '^No known vulnerability' "vulnix-$h/report.md" 2>/dev/null || clean=false
+          done
+          # Latest report issue, open or closed: reopened rather than duplicated
+          read -r issue state < <(gh issue list --label vulnix --state all --limit 1 --json number,state --jq '.[] | "\(.number) \(.state)"') || true
+          if [ -z "$issue" ]; then
+            $clean || gh issue create --title "Vulnerability report" --label vulnix --body-file body.md
+            exit 0
+          fi
+          if $clean; then
+            [ "$state" = OPEN ] || exit 0
             gh issue edit "$issue" --body-file body.md
+            gh issue close "$issue" --comment "No known vulnerability left, closing. Reopened by the next scan that finds one."
           else
-            gh issue create --title "Vulnerability report" --label vulnix --body-file body.md
+            gh issue edit "$issue" --body-file body.md
+            [ "$state" = OPEN ] || gh issue reopen "$issue"
           fi
