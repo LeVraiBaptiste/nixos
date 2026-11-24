@@ -2,215 +2,209 @@
 
 ## Overview
 
-Two-host infrastructure managed declaratively with NixOS and Arion (Nix-native Docker Compose).
-Deployed from desktop via `nixos-rebuild --target-host`.
+Four NixOS hosts in one flake, joined by a WireGuard star centred on `remote`:
 
-## Hosts
+| Host      | Where            | Role                                                        |
+|-----------|------------------|-------------------------------------------------------------|
+| `remote`  | OVH, public IP   | WireGuard hub, public ingress (native Caddy, Let's Encrypt) |
+| `server`  | Home LAN, NAT    | Dell T330, every self-hosted service (one docker-compose)   |
+| `desktop` | Home LAN, NAT    | Workstation, deploys the two machines above over SSH        |
+| `laptop`  | Anywhere         | Roaming workstation, reaches the others through the tunnel  |
 
-### Server (Dell T330, 192.168.1.62)
+Nothing at home is exposed: `remote` is the only machine with an open port on the
+internet, and the server is reached through a tunnel it opens itself.
 
-Primary home server. Runs all local services.
+## Network
 
-| Service | Image | Purpose |
-|---------|-------|---------|
-| Home Assistant | `ghcr.io/home-assistant/home-assistant:stable` | Home automation |
-| Jellyfin | `jellyfin/jellyfin:latest` | Media server |
-| WireGuard | `linuxserver/wireguard` | VPN peer (client, connects to remote) |
+```mermaid
+flowchart LR
+    internet(("Internet"))
 
-### Remote (dedicated server, fixed IP)
+    subgraph ovh["OVH"]
+        remote["<b>remote</b><br>10.10.0.1<br>Caddy :80/:443<br>WireGuard :51820<br>ip_forward=1"]
+    end
 
-Public-facing gateway. Provides external access.
+    subgraph home["Home LAN (NAT)"]
+        server["<b>server</b><br>10.10.0.3"]
+        desktop["<b>desktop</b><br>10.10.0.2"]
+    end
 
-| Service | Image | Purpose |
-|---------|-------|---------|
-| WireGuard | `linuxserver/wireguard` | VPN peer (server, fixed IP endpoint) |
-| Caddy | `caddy:latest` | Reverse proxy, automatic HTTPS |
-| Authelia | `authelia/authelia:latest` | SSO / 2FA authentication |
+    laptop["<b>laptop</b><br>10.10.0.5"]
+    phone["<b>phone</b><br>10.10.0.4"]
 
-## Network Topology
-
-```
-Internet
-  |
-  v
-your.domain.com --> Caddy (remote, :443)
-                      |
-                    Authelia (2FA check)
-                      |
-                    WireGuard tunnel
-                      |
-                      v
-                Home Assistant (server, :8123)
-
-Desktop --SSH--> server (nixos-rebuild)
-Desktop --SSH--> remote  (nixos-rebuild)
+    internet -- "HTTPS *.domain" --> remote
+    server -. "wg0" .-> remote
+    desktop -. "wg0" .-> remote
+    laptop -. "wg0" .-> remote
+    phone -. "wg0" .-> remote
 ```
 
-### Roles
+- `remote` runs WireGuard through systemd-networkd, with one peer per host (`/32`
+  allowed IPs) and IP forwarding, so peers reach each other through it.
+- Every other host is a client with `persistentKeepalive = 25` (they are all behind NAT)
+  and a split tunnel: only `10.10.0.0/24` goes through `wg0`.
+- On `server`, `wg0` is a trusted firewall interface. On `desktop`, only Orca's port
+  (`6768`) is opened on `wg0`, for the phone.
 
-- **Server** is the HA server (runs Home Assistant) and VPN client (initiates tunnel from behind NAT)
-- **Remote** is the VPN server (fixed public IP, accepts connections) and HA client (proxies requests to HA)
+Tunnel IPs, the listen port and public keys live in `vars.nix`. Key generation and the
+phone setup are in [wireguard-setup.md](wireguard-setup.md).
 
-### WireGuard Tunnel
+## Ingress
 
-The tunnel is **bidirectional**. The client/server distinction only determines who initiates the connection:
+There are two Caddy instances:
 
-- Server (home, behind NAT) **initiates** the connection outward
-- Remote (fixed IP) **listens** and accepts it
+- **Edge** (`remote`, `modules/nixos/edge.nix`): native NixOS Caddy, owns 80/443 and gets
+  real certificates. It declares one virtual host per server subdomain and relays it to
+  `https://10.10.0.3`, keeping the original `Host` and SNI. A catch-all on `:80`
+  aborts requests for undeclared hosts; on 443 they fail the TLS handshake.
+- **Server** (`config/server/Caddyfile`, in docker-compose): `tls internal`, routes by
+  host to `localhost:<port>`, and trusts `X-Forwarded-*` only from `10.10.0.1`. The edge
+  skips verification of its internal certificate.
 
-Once established, traffic flows freely both ways on the tunnel subnet (`10.10.0.0/24`):
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Browser
+    participant E as Caddy (remote)
+    participant C as Caddy (server)
+    participant A as Authelia
+    participant S as Service
 
-| Host | Tunnel IP | Role |
-|------|-----------|------|
-| Remote | `10.10.0.1` | VPN server, HA client (Caddy proxies to HA) |
-| Server | `10.10.0.2` | VPN client, HA server (runs Home Assistant) |
-
-Caddy on remote reverse-proxies to `10.10.0.2:8123` — this routes over the WireGuard tunnel transparently.
-
-## Implementation Plan
-
-### Phase 1: Arion Integration
-
-Add Arion as a flake input and create a reusable module pattern.
-
-1. Add `arion` to `flake.nix` inputs
-2. Create `modules/arion.nix` — base Arion setup, replaces current `modules/docker.nix`
-3. Define per-host service modules under `modules/services/`
-
-File structure after this phase:
-
-```
-flake.nix
-hosts/
-  server.nix
-  server-hardware-configuration.nix
-  remote.nix
-  remote-hardware-configuration.nix
-modules/
-  common.nix
-  arion.nix              # replaces docker.nix
-  shell.nix
-  services/
-    home-assistant.nix   # HA container definition
-    jellyfin.nix         # Jellyfin container definition
-    wireguard.nix        # WireGuard client/server
-    caddy.nix            # reverse proxy
-    authelia.nix         # authentication
+    U->>E: HTTPS sonarr.domain
+    E->>C: reverse_proxy https://10.10.0.3 over wg0 (SNI kept)
+    C->>A: forward_auth /api/authz/forward-auth
+    alt not logged in
+        A-->>U: redirect to auth.domain (password + 2FA)
+    else session valid
+        A-->>C: 200 + Remote-User / Remote-Groups
+        C->>S: localhost:port
+        S-->>U: response
+    end
 ```
 
-### Phase 2: Server Services
+| Subdomain    | Service        | Auth                       |
+|--------------|----------------|----------------------------|
+| `auth`       | Authelia       | portal itself              |
+| `assistant`  | Home Assistant | own login (also plain HTTP on the LAN, for the Android app) |
+| `medias`     | Jellyfin       | own login                  |
+| `audiobooks` | Audiobookshelf | own login                  |
+| `files`      | FileBrowser    | Authelia                   |
+| `torrents`   | qBittorrent    | Authelia                   |
+| `prowlarr`   | Prowlarr       | Authelia                   |
+| `sonarr`     | Sonarr         | Authelia                   |
+| `radarr`     | Radarr         | Authelia                   |
+| `shelfarr`   | Shelfarr       | Authelia                   |
 
-Deploy Home Assistant and Jellyfin on the server.
+Adding a subdomain means touching both sides: `serverSubdomains` in `edge.nix` and a
+block in the server's Caddyfile. Apps hosted on `remote` itself just add their own
+`services.caddy.virtualHosts`.
 
-1. **Home Assistant**
-   - Bind-mount config to `/srv/hass/config`
-   - Host network mode (required for mDNS device discovery)
-   - Persist config directory across rebuilds
+## Server services
 
-2. **Jellyfin**
-   - Bind-mount media library (e.g. `/srv/media`)
-   - Bind-mount config to `/srv/jellyfin/config`
-   - Expose port 8096
+```mermaid
+flowchart TB
+    wg["wg0 (from remote)"] --> caddy["Caddy"]
+    lan["LAN"] --> caddy
 
-3. **Firewall** — open ports for services that need LAN access (8123, 8096)
+    caddy --> authelia["Authelia"]
+    caddy --> ha["Home Assistant"]
+    caddy --> jellyfin["Jellyfin"]
+    caddy --> abs["Audiobookshelf"]
+    caddy -- "forward_auth" --> protected
 
-### Phase 3: Home Assistant Config Management
+    subgraph protected["Behind Authelia"]
+        filebrowser["FileBrowser"]
+        sonarr["Sonarr"]
+        radarr["Radarr"]
+        shelfarr["Shelfarr"]
 
-Track HA configuration in a **separate private GitHub repo**, independent from this homelab repo.
-The homelab repo manages infrastructure (NixOS + Arion); the HA config repo tracks Home Assistant's
-generated and manually edited configuration files. They have different lifecycles and commit patterns.
+        subgraph vpn["gluetun network namespace"]
+            qbit["qBittorrent"]
+            prowlarr["Prowlarr"]
+            flare["FlareSolverr"]
+        end
+    end
 
-1. **Separate repo**: `ha-config` on GitHub (private)
-   - Lives at `/srv/hass/config` on the server
-   - Not linked to the homelab repo (no submodule)
+    vpn == "WireGuard" ==> proton(("ProtonVPN"))
+    qbit --> media[("/srv/media")]
+    media --> jellyfin
+    media --> abs
+```
 
-2. **Manual bootstrap** (one-time, after first HA deploy):
-   ```bash
-   cd /srv/hass/config
-   git init
-   # create .gitignore (see below)
-   ssh-keygen -t ed25519 -f /root/.ssh/ha-deploy-key -N ""
-   # add the public key to GitHub repo as a deploy key (write access)
-   git add -A && git commit -m "initial"
-   git remote add origin git@github.com:<user>/ha-config.git
-   git push -u origin main
-   ```
+Most containers use host networking. qBittorrent, Prowlarr and FlareSolverr use
+`network_mode: service:gluetun` instead, so their only way out is gluetun's ProtonVPN
+tunnel (if it drops, they lose the internet rather than leaking).
 
-3. **SSH config** for the deploy key (NixOS-managed):
-   ```
-   # Configured via programs.ssh or environment.etc
-   Host github.com
-     IdentityFile /root/.ssh/ha-deploy-key
-     IdentitiesOnly yes
-   ```
+### How compose is deployed
 
-4. **`.gitignore`** excludes:
-   - `home-assistant_v2.db` (database, large and volatile)
-   - `.storage/` (internal state, regenerated)
-   - `secrets.yaml` (credentials — must not be pushed)
-   - `tts/`, `deps/`, `__pycache__/`
+`modules/nixos/docker-compose.nix` defines `homelab.compose.files`. The server host fills
+it with `config/server/*` templates passed through `pkgs.replaceVars` (domain, ports,
+timezone from `vars`), and the module links them into `/etc/docker-compose`. A
+`docker-compose` systemd unit runs `docker compose -p homelab up -d --remove-orphans`
+and restarts whenever one of the files changes, so `rebuild server` is the only
+deployment step.
 
-5. **Systemd timer** (NixOS-managed, not a container)
-   - Runs daily: `git add -A && git commit -m "auto: $(date)" && git push`
-   - Pushes to the private `ha-config` GitHub repo
-   - Uses the deploy key for auth (no user credentials on server)
+Secrets never go through the templates: sops-nix renders `authelia.env`,
+`gluetun.env` and `authelia-users.yml` into `/run/secrets/rendered/`, which compose
+mounts by absolute path. Each template restarts `docker-compose.service` when it
+changes. See [secrets.md](secrets.md).
 
-### Phase 4: Remote Services
+### Other server units
 
-Deploy VPN, reverse proxy, and auth on remote.
+- `ipmi-fan-control`: adjusts the T330's fans to the CPU temperature through IPMI, and
+  hands control back to the firmware when stopped.
+- `ha-config-backup` (daily timer): commits `/srv/hass/config` and pushes it to a separate
+  private `ha-config` repo with a deploy key in `/root/.ssh/ha-deploy-key`. The repo,
+  its `.gitignore` (database, `.storage/`, `secrets.yaml`) and the key are bootstrapped
+  by hand once.
 
-1. **WireGuard**
-   - Site-to-site tunnel between remote and server
-   - Remote is the WireGuard "server" (has fixed public IP)
-   - Server is the WireGuard "client" (initiates connection from behind NAT)
-   - Tunnel subnet (e.g. `10.10.0.0/24`)
+## Deployment
 
-2. **Caddy**
-   - Terminates HTTPS for `your.domain.com`
-   - Automatic certificate management via Let's Encrypt
-   - Forwards authenticated requests through WireGuard to HA (`10.10.0.2:8123`)
+```mermaid
+flowchart LR
+    pv["private/vars.yaml<br>(sops)"] -- "sops decrypt" --> tmp["tmpfs vars.json"]
+    tmp -- "override-input private" --> flake{{"flake.nix"}}
+    vars["vars.nix"] --> flake
+    flake -- "switch" --> local["desktop / laptop"]
+    flake -- "switch --target-host" --> server["server"]
+    flake -- "switch --target-host" --> remote["remote"]
+```
 
-3. **Authelia**
-   - Caddy checks every request against Authelia (forward auth)
-   - Supports TOTP 2FA
-   - User database in a local YAML file (sufficient for single-user)
-   - Session and storage config in Authelia's own volume
+Everything goes through `scripts/rebuild.sh` from a workstation: it decrypts the personal
+values and evaluates the flake locally, then switches the current host or pushes the
+closure over SSH. `server` and `remote` have no copy of the repo to build from. A build
+with the committed placeholders (`private/example/`) fails an assertion.
 
-### Phase 5: Cameras (future)
+`remote` is partitioned with disko and boots GRUB in removable EFI mode, plus a copy to
+`\EFI\debian\grubx64.efi`, the only path the OVH firmware reliably boots.
 
-Not in current scope. Will add Frigate + Mosquitto on server when ready.
-
-## Data Layout
-
-### Server
+## Data layout (server)
 
 ```
 /srv/
-  hass/
-    config/          # HA configuration (git-tracked, auto-pushed to GitHub)
-  jellyfin/
-    config/          # Jellyfin configuration
-  media/             # Media library for Jellyfin
+  hass/config/          Home Assistant (git-tracked, pushed daily)
+  caddy/data/           internal CA, state
+  authelia/data/        sessions, storage (users file comes from /run/secrets)
+  jellyfin/config/
+  filebrowser/{data,database,config}/
+  gluetun/  qbittorrent/  prowlarr/  sonarr/  radarr/  shelfarr/
+  audiobookshelf/{config,metadata}/
+  media/
+    downloads/  tv/  movies/  ebooks/  audiobooks/
 ```
 
-### Remote
+The directories are created by `systemd.tmpfiles` in `hosts/server/default.nix`.
 
-```
-/srv/
-  caddy/
-    data/            # certificates, state
-    Caddyfile        # proxy config
-  authelia/
-    config/          # Authelia configuration
-```
-
-## Key Decisions
+## Key decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| Arion over plain compose files | Single deployment path via nixos-rebuild; no manual file copying |
-| HA Container over HA OS/Supervised | HA Supervised conflicts with NixOS; add-ons are just containers we manage ourselves |
-| Caddy over Nginx/Traefik | Auto HTTPS, minimal config, good Authelia integration |
-| WireGuard over OpenVPN | Faster, simpler, lower overhead, built into Linux kernel |
-| Separate repo for HA config | Different lifecycle than infra repo; avoids auto-commit noise in homelab repo |
-| Manual bootstrap over declarative secrets | One-time 2-minute setup; avoids agenix/sops-nix dependency for a single key |
+| Hub on a rented server, clients dial out | No port forwarding at home; the home IP never matters |
+| Two Caddys (edge + server) | The edge only relays and holds the public certificates; routing and auth stay next to the services, and also work on the LAN |
+| Authelia on the server, not the edge | Same portal from the LAN and from outside; the edge has no state |
+| Plain docker-compose rendered by Nix | Upstream images and compose syntax as documented, still deployed by `nixos-rebuild` alone |
+| Download stack inside gluetun | Kill switch by construction: no route out except the VPN |
+| HA Container over HA OS / Supervised | Supervised conflicts with NixOS; add-ons are just more containers |
+| sops-nix for secrets | Encrypted in the public repo, decrypted on the host with its SSH key, never in the store |
+| Separate repo for HA config | Different lifecycle; keeps auto-commits out of this repo |
+| WireGuard over OpenVPN | In-kernel, simpler, faster |
