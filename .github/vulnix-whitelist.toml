@@ -4,3 +4,48 @@
 # ["Diff-1.0.2"]
 # cve = ["CVE-2024-13278"]
 # comment = "Haskell library, the CVE is about the Drupal Diff module"
+
+# Name collisions: the CVEs are about a different project with the same name.
+# Keyed by name only so they stay silenced across upgrades; new CVEs still show.
+
+["git"]
+cve = ["CVE-2022-36882", "CVE-2022-30947", "CVE-2022-36883", "CVE-2022-38663", "CVE-2021-21684", "CVE-2022-36884"]
+comment = "Jenkins Git plugin, not git"
+
+["kitty"]
+cve = ["CVE-2024-23749", "CVE-2024-25003", "CVE-2024-25004", "CVE-2023-48795"]
+comment = "KiTTY (Windows PuTTY fork), not the kitty terminal"
+
+["shellcheck"]
+cve = ["CVE-2021-28794"]
+comment = "vscode-shellcheck extension, not shellcheck"
+
+["bolt"]
+cve = ["CVE-2022-31321", "CVE-2025-34086", "CVE-2021-27367", "CVE-2023-5214"]
+comment = "Bolt CMS, not the Thunderbolt daemon"
+
+["snappy"]
+cve = ["CVE-2023-28115", "CVE-2023-41330"]
+comment = "KnpLabs Snappy (PHP), not Google snappy"
+
+["orc"]
+cve = ["CVE-2025-47436"]
+comment = "Apache ORC, not the GStreamer Oil Runtime Compiler"
+
+["go"]
+cve = ["CVE-2023-49292"]
+comment = "ecies/go library, not the Go toolchain"
+
+["avahi"]
+cve = ["CVE-2021-26720"]
+comment = "Debian-only avahi-daemon-check-dns.sh script, not shipped by nixpkgs"
+
+# Version misread: vulnix sees version "1"/"3", the CVEs were fixed long before ours.
+
+["dbus"]
+cve = ["CVE-2022-42010", "CVE-2022-42011", "CVE-2022-42012"]
+comment = "Fixed in dbus 1.14.4"
+
+["lapack"]
+cve = ["CVE-2021-4048"]
+comment = "Fixed in LAPACK 3.10.1"
