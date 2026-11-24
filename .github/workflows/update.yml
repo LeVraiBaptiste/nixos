@@ -82,26 +82,9 @@ jobs:
 
       - id: update
         name: Update orca-ide
-        # Not nix-update: with Nix >= 2.35 (lazy trees) it passes a flake store
-        # path that is never materialized, and its eval fails with
-        # "opening file /nix/store/...-source: No such file or directory".
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          f=overlays/orca-ide.nix
-          old=$(nix eval --raw .#orca-ide.version)
-          new=$(gh api repos/stablyai/orca/releases/latest --jq .tag_name | sed 's/^v//')
-          if [ "$new" != "$old" ]; then
-            url="https://github.com/stablyai/orca/releases/download/v$new/orca-linux.AppImage"
-            hash=$(nix store prefetch-file --json "$url" | jq -r .hash)
-            sed -i -e "s|version = \"$old\";|version = \"$new\";|" \
-                   -e "s|hash = \"sha256-[^\"]*\";|hash = \"$hash\";|" "$f"
-            # Fails the job if the sed did not land
-            test "$(nix eval --raw .#orca-ide.version)" = "$new"
-            test "$(nix eval --raw .#orca-ide.src.outputHash)" = "$hash"
-          fi
-          echo "old=$old" >> "$GITHUB_OUTPUT"
-          echo "new=$new" >> "$GITHUB_OUTPUT"
+        run: scripts/update-orca-ide.sh
 
       - id: pr
         if: steps.update.outputs.old != steps.update.outputs.new

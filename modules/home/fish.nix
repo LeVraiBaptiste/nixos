@@ -48,7 +48,7 @@
     shellAliases = {
       gtnix = "cd /etc/nixos && . .folderSelect.sh";
       # Bump flake inputs, then custom packages not tracked by flake.lock
-      update = "sudo nix flake update --flake /etc/nixos && nix run nixpkgs#nix-update -- --flake --file /etc/nixos orca-ide";
+      update = "sudo nix flake update --flake /etc/nixos && /etc/nixos/scripts/update-orca-ide.sh";
       rebuild = "/etc/nixos/scripts/rebuild.sh";
       rebuild-all = "/etc/nixos/scripts/rebuild-all.sh";
       ll = "ls -la";
