@@ -30,7 +30,8 @@ if len(sys.argv) > 3:
 
 
 def worst(f):
-    return max(f["cvssv3_basescore"].values(), default=0)
+    # cvssv3_basescore also scores the whitelisted CVEs
+    return max((f["cvssv3_basescore"].get(c, 0) for c in f["affected_by"]), default=0)
 
 
 findings.sort(key=worst, reverse=True)
