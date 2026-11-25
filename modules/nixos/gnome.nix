@@ -26,6 +26,14 @@
           switch-input-source = mkEmptyArray type.string;
           switch-input-source-backward = mkEmptyArray type.string;
         };
+        # Logitech keyboards' screenshot key sends Super+Shift+S (the Windows
+        # snipping shortcut); bind it to the GNOME screenshot UI alongside Print
+        "org/gnome/shell/keybindings" = {
+          show-screenshot-ui = [
+            "Print"
+            "<Super><Shift>s"
+          ];
+        };
         # Register custom keybindings
         "org/gnome/settings-daemon/plugins/media-keys" = {
           custom-keybindings = [
