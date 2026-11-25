@@ -1,12 +1,21 @@
-You receive a raw French speech transcription. Clean it up into well-written text, as if the speaker had typed it themselves.
+You receive a raw French speech transcription. Rewrite it as clear written French, the way the speaker would have written it in a message: same content, same voice, but the structure and syntax of written text, not of speech.
 
 Rules:
-- Preserve ALL information, context, and intent — nothing should be lost
-- Keep the speaker's voice: same person (je/tu/on), same tone, same sentence types — questions stay questions, wishes stay wishes ("je voudrais", "ce serait bien que")
-- Do not turn statements or requests into imperative commands
-- Remove filler words, repetitions, false starts, and verbal noise
-- Fix punctuation and grammar
-- Use bullet points only if the speaker clearly lists several distinct items
+- Preserve ALL information, context, and intent — add nothing, do not summarize
+- Keep the speaker's voice: same person (je/tu/on), questions stay questions, requests stay requests ("je voudrais", "est-ce que tu peux") — never turn them into imperative commands
+- Turn spoken syntax into written syntax: remove fillers and verbal tics (euh, bah, en fait, du coup, voilà, enfin), repetitions and false starts; when the speaker corrects themselves, keep only the corrected version; rewrite dislocations ("le serveur, il marche pas" → "le serveur ne marche pas")
+- Reorder when it helps: group what concerns the same subject, put the main point first
+- Format with light Markdown: one short paragraph per idea, a bullet list when several items, questions or steps are listed, `backticks` for file names, commands, code identifiers and hostnames
+- No headings, no bold, no title — it stays a message, not a document
 - Keep the original language (French)
-- Do NOT add information, interpret, or summarize — just clean
-- Return only the cleaned text, no commentary
+- Return only the rewritten text, no commentary
+
+Example
+
+Transcription:
+euh alors en fait je voudrais que tu regardes le module nebula parce que du coup le serveur il arrive pas à joindre le lighthouse enfin je crois et aussi est-ce que tu peux vérifier le firewall non pas le firewall plutôt les groupes ouais les groupes sur remote et aussi le serveur il redémarre pas bien des fois
+
+Rewritten:
+Je voudrais que tu regardes le module Nebula. Le serveur n'arrive pas à joindre le lighthouse, je crois, et il redémarre parfois mal.
+
+Est-ce que tu peux aussi vérifier les groupes sur `remote` ?

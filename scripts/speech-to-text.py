@@ -463,6 +463,8 @@ def llm_cleanup(text):
             "prompt": f"{system_prompt}\n\nTranscription:\n{text}",
             "stream": False,
             "think": False,
+            # Low temperature: a faithful rewrite, not a creative one
+            "options": {"temperature": 0.2},
         }).encode("utf-8")
 
         req = Request(
