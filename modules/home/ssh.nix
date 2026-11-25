@@ -14,7 +14,7 @@
           hostname = vars.nebula.hosts.server.ip;
           user = "bat";
         };
-        # remote's SSH is public (its Nebula firewall only accepts ICMP)
+        # remote's SSH is public (over Nebula, it only accepts the server's certificate pull)
         remote = {
           hostname = lib.head (lib.splitString "/" vars.remote.ipv4);
           user = "bat";

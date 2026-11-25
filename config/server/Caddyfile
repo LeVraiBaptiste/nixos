@@ -4,6 +4,11 @@
   }
 }
 
+# Public certificates, pulled from remote (modules/nixos/edge-certs.nix)
+(public_cert) {
+  tls /certs/{args[0]}/{args[0]}.crt /certs/{args[0]}/{args[0]}.key
+}
+
 (authelia) {
   forward_auth localhost:@authelia_port@ {
     uri /api/authz/forward-auth
@@ -13,13 +18,13 @@
 
 # Authelia portal
 auth.@domain@ {
-  tls internal
+  import public_cert auth.@domain@
   reverse_proxy localhost:@authelia_port@
 }
 
 # Home Assistant (HTTPS for laptop/remote, HTTP for Android app on LAN)
 assistant.@domain@ {
-  tls internal
+  import public_cert assistant.@domain@
   reverse_proxy localhost:@ha_port@
 }
 
@@ -29,54 +34,54 @@ http://assistant.@domain@ {
 
 # Jellyfin (has its own auth)
 medias.@domain@ {
-  tls internal
+  import public_cert medias.@domain@
   reverse_proxy localhost:@jellyfin_port@
 }
 
 # FileBrowser
 files.@domain@ {
-  tls internal
+  import public_cert files.@domain@
   import authelia
   reverse_proxy localhost:@filebrowser_port@
 }
 
 # qBittorrent
 torrents.@domain@ {
-  tls internal
+  import public_cert torrents.@domain@
   import authelia
   reverse_proxy localhost:@qbittorrent_port@
 }
 
 # Prowlarr
 prowlarr.@domain@ {
-  tls internal
+  import public_cert prowlarr.@domain@
   import authelia
   reverse_proxy localhost:@prowlarr_port@
 }
 
 # Sonarr
 sonarr.@domain@ {
-  tls internal
+  import public_cert sonarr.@domain@
   import authelia
   reverse_proxy localhost:@sonarr_port@
 }
 
 # Radarr
 radarr.@domain@ {
-  tls internal
+  import public_cert radarr.@domain@
   import authelia
   reverse_proxy localhost:@radarr_port@
 }
 
 # Shelfarr
 shelfarr.@domain@ {
-  tls internal
+  import public_cert shelfarr.@domain@
   import authelia
   reverse_proxy localhost:@shelfarr_port@
 }
 
 # Audiobookshelf (has its own auth)
 audiobooks.@domain@ {
-  tls internal
+  import public_cert audiobooks.@domain@
   reverse_proxy localhost:@audiobookshelf_port@
 }

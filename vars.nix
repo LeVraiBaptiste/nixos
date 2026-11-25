@@ -32,6 +32,15 @@
     };
   };
 
+  # Public certificates: remote's Caddy obtains them (Let's Encrypt), the server pulls a
+  # copy over Nebula so LAN clients can reach it directly (modules/nixos/edge-certs.nix)
+  edgeCerts = {
+    # The server's pull key (private part in secrets/server.yaml)
+    clientKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEkNjxaFXh5qQ8L5myIWuhSuzxsM6OYi3474GDKxs/x9 edge-certs@server";
+    # remote's SSH host key, pinned by the server
+    remoteHostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc84sS3+X2y37sWX7zQAJY9q1YJnvR2v0E03DXhkg10";
+  };
+
   services = {
     homeassistant.port = 8123;
     jellyfin.port = 8096;

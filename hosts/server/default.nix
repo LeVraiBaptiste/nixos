@@ -16,6 +16,7 @@
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/docker.nix
     ../../modules/nixos/docker-compose.nix
+    ../../modules/nixos/edge-certs.nix
   ];
 
   # Legacy BIOS boot with GRUB (not UEFI)

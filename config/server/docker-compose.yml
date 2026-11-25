@@ -14,6 +14,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /srv/caddy/data:/data
+      - /srv/caddy/certs:/certs:ro
     restart: unless-stopped
 
   jellyfin:

@@ -51,6 +51,15 @@
     lib.mapAttrsToList (name: h: "${h.ip} ${name}\n") (removeAttrs vars.nebula.hosts [ "remote" ])
   );
 
+  # Nebula: SSH from the server only, to pull the certificates (modules/nixos/edge-certs.nix)
+  homelab.nebula.inbound = [
+    {
+      port = 22;
+      proto = "tcp";
+      group = "server";
+    }
+  ];
+
   # Static networking via systemd-networkd (no NetworkManager on a headless remote)
   networking.networkmanager.enable = false;
   systemd.network.enable = true;
