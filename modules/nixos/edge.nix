@@ -1,5 +1,5 @@
 # Public ingress — native Caddy owns 80/443 on remote.
-# Base config: relay *.<domain> to the server's Caddy over WireGuard.
+# Base config: relay *.<domain> to the server's Caddy over Nebula.
 # Apps hosted on remote add their own services.caddy.virtualHosts.
 { lib, vars, ... }:
 let
@@ -20,7 +20,7 @@ let
 
   # The server's Caddy uses `tls internal`: skip verification, but keep SNI = requested host
   relayToServer = ''
-    reverse_proxy https://${vars.wireguard.server} {
+    reverse_proxy https://${vars.nebula.hosts.server.ip} {
       header_up Host {host}
       header_up X-Forwarded-Proto {scheme}
       transport http {

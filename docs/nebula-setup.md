@@ -93,8 +93,10 @@ Host certificates expire with the CA (10 years). Changing a host's groups or IP 
 
 ## Migration status
 
-1. Nebula alongside `wg0` (current step): nothing uses it yet.
-2. Move consumers to `10.20.0.x`: SSH aliases (`modules/home/ssh.nix`), dictation
+1. ~~Nebula alongside `wg0`~~: desktop, laptop, server and remote enrolled.
+2. ~~Move consumers to `10.20.0.x`~~: SSH aliases (`modules/home/ssh.nix`), dictation
    (`hosts/laptop`), the edge relay (`modules/nixos/edge.nix`, `trusted_proxies` in the
-   server's Caddyfile).
-3. Remove `wg0` from every host, `vars.wireguard` and `docs/wireguard-setup.md`.
+   server's Caddyfile), hostnames on remote.
+3. Enroll the phone, then remove `wg0` from every host (and Orca's `wg0` rule on the
+   desktop), move `vars.wireguard.remoteEndpoint` out of `vars.wireguard`, delete
+   `docs/wireguard-setup.md` and the WireGuard app.

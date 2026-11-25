@@ -1,6 +1,6 @@
 {
   servers {
-    trusted_proxies static @wg_remote@
+    trusted_proxies static @edge_ip@
   }
 }
 

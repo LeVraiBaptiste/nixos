@@ -148,7 +148,7 @@
     };
     "Caddyfile" = pkgs.replaceVars ../../config/server/Caddyfile {
       inherit (vars) domain;
-      wg_remote = vars.wireguard.remote;
+      edge_ip = vars.nebula.hosts.remote.ip;
       authelia_port = toString vars.services.authelia.port;
       ha_port = toString vars.services.homeassistant.port;
       jellyfin_port = toString vars.services.jellyfin.port;

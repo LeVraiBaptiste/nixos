@@ -46,13 +46,10 @@
 
   networking.hostName = "remote";
 
-  # WireGuard peer hostnames
-  networking.extraHosts = ''
-    ${vars.wireguard.desktop} desktop
-    ${vars.wireguard.server} server
-    ${vars.wireguard.phone} phone
-    ${vars.wireguard.laptop} laptop
-  '';
+  # Mesh peer hostnames (Nebula)
+  networking.extraHosts = lib.concatStrings (
+    lib.mapAttrsToList (name: h: "${h.ip} ${name}\n") (removeAttrs vars.nebula.hosts [ "remote" ])
+  );
 
   # Static networking via systemd-networkd (no NetworkManager on a headless remote)
   networking.networkmanager.enable = false;

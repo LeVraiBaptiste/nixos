@@ -67,10 +67,10 @@
   # Wake-on-LAN
   environment.systemPackages = with pkgs; [ wol ];
 
-  # Remote desktop for GPU-accelerated dictation: LAN at home, WireGuard elsewhere
+  # Remote desktop for GPU-accelerated dictation: LAN at home, Nebula elsewhere
   services.dictation-client.remoteHosts = [
     "desktop.local.com"
-    vars.wireguard.desktop
+    vars.nebula.hosts.desktop.ip
   ];
 
   # GNOME Desktop Environment
