@@ -127,7 +127,7 @@ flowchart TB
         end
     end
 
-    vpn == "WireGuard" ==> proton(("ProtonVPN"))
+    vpn ==> proton(("ProtonVPN"))
     qbit --> media[("/srv/media")]
     media --> jellyfin
     media --> abs
@@ -209,4 +209,4 @@ The directories are created by `systemd.tmpfiles` in `hosts/server/default.nix`.
 | HA Container over HA OS / Supervised | Supervised conflicts with NixOS; add-ons are just more containers |
 | sops-nix for secrets | Encrypted in the public repo, decrypted on the host with its SSH key, never in the store |
 | Separate repo for HA config | Different lifecycle; keeps auto-commits out of this repo |
-| Nebula mesh over a WireGuard star | Direct tunnels between hosts (LAN at home), the public relay never sees cleartext, access by certificate group |
+| Nebula mesh, not a hub-and-spoke VPN | Direct tunnels between hosts (LAN at home), the public relay never sees cleartext, access by certificate group |

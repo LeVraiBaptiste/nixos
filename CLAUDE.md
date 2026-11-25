@@ -26,7 +26,7 @@ Always rebuild through `scripts/rebuild.sh` (fish alias `rebuild`): it decrypts 
     - `remote/` - Public-facing gateway: Nebula lighthouse + relay, native Caddy ingress (`modules/nixos/edge.nix`), uses disko
 - `modules/` - Modular components:
     - `nixos/` - System-level NixOS modules (boot, network, bluetooth, gnome, audio, printing, nvidia, docker, ssh, steam, brave, dictation, obs, ollama, etc.)
-    - `home/` - Home-manager modules (git, fish, dev tools, claude-code, ghostty, kitty, neovim, tmux, lazygit, messaging, vpn, locale)
+    - `home/` - Home-manager modules (git, fish, dev tools, claude-code, ghostty, kitty, neovim, tmux, lazygit, messaging, ssh, locale)
 - `config/` - Dotfiles and service configs
     - `nvim/` - Neovim configuration (NvChad-based)
     - `ghostty.conf`, `kitty.conf`, `lazygit.yml`, `tmux.conf` - Terminal/tool configs

@@ -20,7 +20,7 @@ OLLAMA_MODEL = "gemma4:e4b"
 OLLAMA_TIMEOUT = 120
 
 # Remote desktop for GPU-accelerated transcription (set via env)
-# Space-separated, tried in order (e.g. LAN address first, then WireGuard)
+# Space-separated, tried in order (e.g. LAN address first, then Nebula)
 WHISPER_REMOTE_HOSTS = os.environ.get("WHISPER_REMOTE_HOSTS", "").split()
 WHISPER_REMOTE_PORT = os.environ.get("WHISPER_REMOTE_PORT", "8080")
 OLLAMA_REMOTE_PORT = os.environ.get("OLLAMA_REMOTE_PORT", "11434")

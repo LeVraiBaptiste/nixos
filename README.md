@@ -105,7 +105,7 @@ flowchart TB
         end
     end
 
-    vpn == "WireGuard" ==> proton(("ProtonVPN"))
+    vpn ==> proton(("ProtonVPN"))
     qbit --> media[("/srv/media")]
     media --> jellyfin
     media --> abs
@@ -124,7 +124,7 @@ scripts/          Rebuild, dictation, backups, IPMI fan control
 vars.nix          Shared non-secret values (LAN/Nebula IPs and groups, ports)
 private/          Personal values, sops-encrypted (see below)
 secrets/          sops-encrypted secrets for the server
-docs/             Architecture, Nebula, secrets
+docs/             Architecture, Nebula setup, secrets
 nebula/           Nebula CA and host certificates (public)
 ```
 

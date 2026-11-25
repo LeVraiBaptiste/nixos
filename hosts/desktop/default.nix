@@ -118,7 +118,6 @@
     ../../modules/home/claude-code.nix
     ../../modules/home/dev.nix
     ../../modules/home/messaging.nix
-    # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
 
   # GNOME Desktop Environment

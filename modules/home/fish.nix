@@ -61,7 +61,7 @@
       fg = "fzf --ansi --disabled --bind 'start:reload:echo Type to search...' --bind 'change:reload:rg --line-number --color=always -- {q} || true' --delimiter ':' --preview 'bat --color=always --style=numbers --highlight-line {2} {1}' --preview-window '+{2}-5' --bind 'ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,enter:execute[micro +{2} {1}]'";
       t = "tmux attach || tmux";
       ssh-desktop = "tmux detach-client -E 'ssh desktop -t tmux new-session -A -s default'";
-      # Magic packet sent from the server (wired LAN), reached via the ssh alias (LAN or WireGuard)
+      # Magic packet sent from the server (wired LAN), reached via the ssh alias (LAN or Nebula)
       wake-desktop = "ssh server wol 34:5a:60:19:2a:a7";
     };
   };
