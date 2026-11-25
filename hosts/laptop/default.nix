@@ -6,6 +6,9 @@
 }:
 {
   networking.hostName = "laptop";
+
+  # Wi-Fi power save holds incoming packets until the next AP beacon (~100 ms jitter on LAN)
+  networking.networkmanager.wifi.powersave = false;
   imports = [
     ./hardware-configuration.nix
 
