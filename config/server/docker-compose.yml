@@ -71,7 +71,18 @@ services:
       DNS_ADDRESS: "10.2.0.1"
       HEALTH_VPN_DURATION_INITIAL: "30s"
       HEALTH_SUCCESS_WAIT_DURATION: "10s"
-      FREE_ONLY: "on"
+      # Paid plan: P2P servers with NAT-PMP port forwarding only
+      PORT_FORWARD_ONLY: "on"
+      VPN_PORT_FORWARDING: "on"
+      # Push the forwarded port to qBittorrent (needs WebUI\LocalHostAuth=false),
+      # retrying while qBittorrent is still starting
+      VPN_PORT_FORWARDING_UP_COMMAND: >-
+        /bin/sh -c 'for i in $$(seq 30); do
+        wget -qO- --post-data "json={\"listen_port\":{{PORTS}}}"
+        http://127.0.0.1:@qbittorrent_port@/api/v2/app/setPreferences && exit 0;
+        sleep 2; done; exit 1'
+      # 1400 caused TLS handshake timeouts (large packets dropped in the tunnel)
+      WIREGUARD_MTU: "1280"
       FIREWALL_OUTBOUND_SUBNETS: "172.18.0.0/16,192.168.1.0/24"
     # WIREGUARD_PRIVATE_KEY rendered by sops-nix (hosts/server/default.nix)
     env_file: /run/secrets/rendered/gluetun.env

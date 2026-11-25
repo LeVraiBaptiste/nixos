@@ -59,7 +59,8 @@
     vpnServiceProvider = "protonvpn";
     vpnType = "wireguard";
     wireguardAddresses = "10.2.0.2/32";
-    serverCountries = "Netherlands";
+    # Filter, not a single server: gluetun picks a random match on each (re)connect
+    serverCountries = "Netherlands,Switzerland,Sweden";
   };
 
   authelia.users.bat = {
