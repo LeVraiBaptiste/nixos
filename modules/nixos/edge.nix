@@ -21,6 +21,7 @@ let
     "prowlarr"
     "sonarr"
     "radarr"
+    "bazarr"
     "shelfarr"
     "audiobooks"
   ];

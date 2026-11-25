@@ -96,6 +96,7 @@ flowchart TB
         filebrowser["FileBrowser"]
         sonarr["Sonarr"]
         radarr["Radarr"]
+        bazarr["Bazarr"]
         shelfarr["Shelfarr"]
 
         subgraph vpn["gluetun network namespace"]

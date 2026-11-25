@@ -73,6 +73,13 @@ radarr.@domain@ {
   reverse_proxy localhost:@radarr_port@
 }
 
+# Bazarr
+bazarr.@domain@ {
+  import public_cert bazarr.@domain@
+  import authelia
+  reverse_proxy localhost:@bazarr_port@
+}
+
 # Shelfarr
 shelfarr.@domain@ {
   import public_cert shelfarr.@domain@

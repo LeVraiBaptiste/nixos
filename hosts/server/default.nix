@@ -112,6 +112,7 @@
     "d /srv/prowlarr 0755 1000 1000 -"
     "d /srv/sonarr 0755 1000 1000 -"
     "d /srv/radarr 0755 1000 1000 -"
+    "d /srv/bazarr 0755 1000 1000 -"
     "d /srv/shelfarr 0755 1000 1000 -"
     "d /srv/media/ebooks 0755 1000 1000 -"
     "d /srv/audiobookshelf/config 0755 1000 1000 -"
@@ -145,6 +146,7 @@
       prowlarr_port = toString vars.services.prowlarr.port;
       sonarr_port = toString vars.services.sonarr.port;
       radarr_port = toString vars.services.radarr.port;
+      bazarr_port = toString vars.services.bazarr.port;
       shelfarr_port = toString vars.services.shelfarr.port;
       audiobookshelf_port = toString vars.services.audiobookshelf.port;
     };

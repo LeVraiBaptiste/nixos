@@ -50,6 +50,7 @@
     prowlarr.port = 9696;
     sonarr.port = 8989;
     radarr.port = 7878;
+    bazarr.port = 6767;
     shelfarr.port = 5056;
     audiobookshelf.port = 13378;
   };

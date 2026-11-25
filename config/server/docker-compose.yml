@@ -153,6 +153,19 @@ services:
       - /srv/media:/media
     restart: unless-stopped
 
+  # Subtitles: fetches missing ones for Radarr/Sonarr items, next to the video files
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: @timezone@
+    volumes:
+      - /srv/bazarr:/config
+      - /srv/media:/media
+    restart: unless-stopped
+
   shelfarr:
     image: ghcr.io/pedro-revez-silva/shelfarr:latest
     network_mode: host

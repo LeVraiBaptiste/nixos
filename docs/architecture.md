@@ -95,6 +95,7 @@ sequenceDiagram
 | `prowlarr`   | Prowlarr       | Authelia                   |
 | `sonarr`     | Sonarr         | Authelia                   |
 | `radarr`     | Radarr         | Authelia                   |
+| `bazarr`     | Bazarr         | Authelia                   |
 | `shelfarr`   | Shelfarr       | Authelia                   |
 
 Adding a subdomain means touching both sides: `serverSubdomains` in `edge.nix` and a
@@ -118,6 +119,7 @@ flowchart TB
         filebrowser["FileBrowser"]
         sonarr["Sonarr"]
         radarr["Radarr"]
+        bazarr["Bazarr"]
         shelfarr["Shelfarr"]
 
         subgraph vpn["gluetun network namespace"]
@@ -189,7 +191,7 @@ with the committed placeholders (`private/example/`) fails an assertion.
   authelia/data/        sessions, storage (users file comes from /run/secrets)
   jellyfin/config/
   filebrowser/{data,database,config}/
-  gluetun/  qbittorrent/  prowlarr/  sonarr/  radarr/  shelfarr/
+  gluetun/  qbittorrent/  prowlarr/  sonarr/  radarr/  bazarr/  shelfarr/
   audiobookshelf/{config,metadata}/
   media/
     downloads/  tv/  movies/  ebooks/  audiobooks/
