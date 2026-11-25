@@ -12,6 +12,7 @@
     ../../modules/nixos/nix.nix
     ../../modules/nixos/locale.nix
     ../../modules/nixos/network.nix
+    ../../modules/nixos/nebula.nix
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/docker.nix
     ../../modules/nixos/docker-compose.nix
@@ -88,6 +89,25 @@
       }
     ];
   };
+
+  # Nebula: SSH for workstations; Caddy for workstations and for the edge on remote
+  homelab.nebula.inbound = [
+    {
+      port = 22;
+      proto = "tcp";
+      group = "workstation";
+    }
+    {
+      port = 443;
+      proto = "tcp";
+      group = "workstation";
+    }
+    {
+      port = 443;
+      proto = "tcp";
+      group = "lighthouse";
+    }
+  ];
 
   # Service directories
   systemd.tmpfiles.rules = [

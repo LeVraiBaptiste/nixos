@@ -14,6 +14,7 @@
     ../../modules/nixos/locale.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/network.nix
+    ../../modules/nixos/nebula.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/audio.nix
     ../../modules/nixos/printing.nix

@@ -43,6 +43,30 @@
   # Orca mobile companion — direct pairing over WireGuard only, never exposed on LAN/WAN
   networking.firewall.interfaces.wg0.allowedTCPPorts = [ 6768 ];
 
+  # Nebula: SSH and dictation (whisper 8080, ollama 11434) for workstations, Orca for the phone
+  homelab.nebula.inbound = [
+    {
+      port = 22;
+      proto = "tcp";
+      group = "workstation";
+    }
+    {
+      port = 8080;
+      proto = "tcp";
+      group = "workstation";
+    }
+    {
+      port = 11434;
+      proto = "tcp";
+      group = "workstation";
+    }
+    {
+      port = 6768;
+      proto = "tcp";
+      group = "phone";
+    }
+  ];
+
   # Prevent suspend on idle (keeps SSH sessions alive when no local user is logged in)
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.settings.Login.IdleAction = "ignore";
@@ -74,6 +98,7 @@
     ../../modules/nixos/locale.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/network.nix
+    ../../modules/nixos/nebula.nix
     ../../modules/nixos/bluetooth.nix
     ../../modules/nixos/audio.nix
     ../../modules/nixos/printing.nix

@@ -19,6 +19,35 @@
     };
   };
 
+  # Nebula mesh (modules/nixos/nebula.nix). Groups are baked into each certificate by
+  # scripts/nebula-cert.sh: changing them means signing the host again.
+  nebula = {
+    port = 4242;
+    lan = "192.168.1.0/24";
+    hosts = {
+      remote = {
+        ip = "10.20.0.1";
+        groups = [ "lighthouse" ];
+      };
+      desktop = {
+        ip = "10.20.0.2";
+        groups = [ "workstation" ];
+      };
+      server = {
+        ip = "10.20.0.3";
+        groups = [ "server" ];
+      };
+      phone = {
+        ip = "10.20.0.4";
+        groups = [ "phone" ];
+      };
+      laptop = {
+        ip = "10.20.0.5";
+        groups = [ "workstation" ];
+      };
+    };
+  };
+
   services = {
     homeassistant.port = 8123;
     jellyfin.port = 8096;

@@ -14,6 +14,7 @@
     ../../modules/nixos/locale.nix
     ../../modules/nixos/ssh.nix
     ../../modules/nixos/edge.nix
+    ../../modules/nixos/nebula.nix
   ];
 
   # GRUB UEFI boot (OVH firmware doesn't reliably find systemd-boot)
