@@ -1,4 +1,4 @@
-{ vars, ... }:
+{ lib, vars, ... }:
 {
   home-manager.users.bat = {
     programs.ssh = {
@@ -16,7 +16,7 @@
         };
         # remote's SSH is public (its Nebula firewall only accepts ICMP)
         remote = {
-          hostname = vars.wireguard.remoteEndpoint;
+          hostname = lib.head (lib.splitString "/" vars.remote.ipv4);
           user = "bat";
         };
       };

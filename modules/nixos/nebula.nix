@@ -56,7 +56,8 @@ in
       lighthouses = lib.optional (!isLighthouse) lighthouse;
       relays = lib.optional (!isLighthouse) lighthouse;
       staticHostMap = lib.optionalAttrs (!isLighthouse) {
-        ${lighthouse} = [ "${vars.wireguard.remoteEndpoint}:${toString n.port}" ];
+        # remote's public IP: its WAN address without the prefix length
+        ${lighthouse} = [ "${lib.head (lib.splitString "/" vars.remote.ipv4)}:${toString n.port}" ];
       };
 
       # Fixed port everywhere (opened by the module): LAN peers reach each other directly

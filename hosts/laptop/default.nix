@@ -50,20 +50,6 @@
     # ../../modules/home/vpn.nix  # TODO: not imported in original config
   ];
 
-  # WireGuard — VPN client (tunnel to remote hub), split tunnel: only 10.10.0.0/24
-  networking.wireguard.interfaces.wg0 = {
-    ips = [ "${vars.wireguard.laptop}/24" ];
-    privateKeyFile = "/etc/wireguard/private.key";
-    peers = [
-      {
-        publicKey = vars.wireguard.publicKeys.remote;
-        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-        allowedIPs = [ "10.10.0.0/24" ];
-        persistentKeepalive = 25;
-      }
-    ];
-  };
-
   # Wake-on-LAN
   environment.systemPackages = with pkgs; [ wol ];
 

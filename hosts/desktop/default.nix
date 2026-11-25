@@ -26,24 +26,8 @@
     };
   };
 
-  # WireGuard — VPN client (tunnel to remote hub)
-  networking.wireguard.interfaces.wg0 = {
-    ips = [ "${vars.wireguard.desktop}/24" ];
-    privateKeyFile = "/etc/wireguard/private.key";
-    peers = [
-      {
-        publicKey = vars.wireguard.publicKeys.remote;
-        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-        allowedIPs = [ "10.10.0.0/24" ];
-        persistentKeepalive = 25;
-      }
-    ];
-  };
-
-  # Orca mobile companion — direct pairing over WireGuard only, never exposed on LAN/WAN
-  networking.firewall.interfaces.wg0.allowedTCPPorts = [ 6768 ];
-
-  # Nebula: SSH and dictation (whisper 8080, ollama 11434) for workstations, Orca for the phone
+  # Nebula: SSH and dictation (whisper 8080, ollama 11434) for workstations, Orca (mobile
+  # companion) for the phone only, never exposed on the LAN/WAN
   homelab.nebula.inbound = [
     {
       port = 22;

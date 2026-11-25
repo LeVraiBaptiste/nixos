@@ -22,8 +22,8 @@ Always rebuild through `scripts/rebuild.sh` (fish alias `rebuild`): it decrypts 
 - `hosts/` - Host-specific configurations (each host is a directory with `default.nix` + `hardware-configuration.nix`)
     - `desktop/` - Desktop: nvidia, steam, dictation, obs, davinci-resolve, all modules
     - `laptop/` - Laptop: lighter config (no nvidia, steam, or dictation)
-    - `server/` - Home server (Dell T330): docker-compose services (Home Assistant, Jellyfin, WireGuard)
-    - `remote/` - Public-facing gateway: WireGuard hub, native Caddy ingress (`modules/nixos/edge.nix`), uses disko
+    - `server/` - Home server (Dell T330): docker-compose services (Home Assistant, Jellyfin, media stack behind gluetun)
+    - `remote/` - Public-facing gateway: Nebula lighthouse + relay, native Caddy ingress (`modules/nixos/edge.nix`), uses disko
 - `modules/` - Modular components:
     - `nixos/` - System-level NixOS modules (boot, network, bluetooth, gnome, audio, printing, nvidia, docker, ssh, steam, brave, dictation, obs, ollama, etc.)
     - `home/` - Home-manager modules (git, fish, dev tools, claude-code, ghostty, kitty, neovim, tmux, lazygit, messaging, vpn, locale)
@@ -37,8 +37,9 @@ Always rebuild through `scripts/rebuild.sh` (fish alias `rebuild`): it decrypts 
 - `.github/workflows/` - `ci.yml` (nixfmt/statix/deadnix, gitleaks, sops check, eval), `update.yml` (weekly flake.lock + orca-ide PRs), `vulnix.yml` (weekly CVE issue)
 - `models/` - Whisper model files (ggml-base, ggml-medium, ggml-large-v3-turbo)
 - `overlays/` - Nix overlays (claude-code)
-- `docs/` - Documentation (architecture, wireguard setup, secrets)
-- `vars.nix` - Shared non-secret values (LAN/WireGuard IPs, ports, public keys), committed
+- `docs/` - Documentation (architecture, nebula setup, secrets)
+- `vars.nix` - Shared non-secret values (LAN/Nebula IPs and groups, ports, public keys), committed
+- `nebula/` - Nebula CA and host certificates (public; keys stay on the hosts, CA key on the workstation)
 - `private/` - Personal values read at evaluation (domain, public IP, git identities, emails): `vars.yaml` sops-encrypted, `example/vars.json` placeholders (default flake input)
 - `secrets/` - sops-encrypted secrets (`sops secrets/server.yaml` to edit, recipients in `.sops.yaml`, see `docs/secrets.md`)
 

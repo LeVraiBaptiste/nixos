@@ -76,20 +76,6 @@
     };
   };
 
-  # WireGuard — VPN client (tunnel to remote hub)
-  networking.wireguard.interfaces.wg0 = {
-    ips = [ "${vars.wireguard.server}/24" ];
-    privateKeyFile = "/etc/wireguard/private.key";
-    peers = [
-      {
-        publicKey = vars.wireguard.publicKeys.remote;
-        endpoint = "${vars.wireguard.remoteEndpoint}:${toString vars.wireguard.listenPort}";
-        allowedIPs = [ "10.10.0.0/24" ];
-        persistentKeepalive = 25;
-      }
-    ];
-  };
-
   # Nebula: SSH for workstations; Caddy for workstations and for the edge on remote
   homelab.nebula.inbound = [
     {
@@ -234,7 +220,6 @@
     trustedInterfaces = [
       "docker0"
       "br-+"
-      "wg0"
     ];
   };
 

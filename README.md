@@ -3,7 +3,7 @@
 [![ci](https://github.com/LeVraiBaptiste/nixos/actions/workflows/ci.yml/badge.svg)](https://github.com/LeVraiBaptiste/nixos/actions/workflows/ci.yml)
 
 My NixOS flake: two workstations, a home server and a public gateway, tied together
-with WireGuard. Secrets go through sops-nix, and personal values (domain, public IP,
+with a Nebula mesh. Secrets go through sops-nix, and personal values (domain, public IP,
 identities) stay encrypted so the repo can be public.
 
 ## Hosts
@@ -13,37 +13,39 @@ identities) stay encrypted so the repo can be public.
 | `desktop` | Workstation: GNOME, nvidia, Steam, OBS, DaVinci Resolve, local Whisper dictation |
 | `laptop`  | Lighter workstation (no nvidia, Steam or dictation server)                       |
 | `server`  | Home server (Dell T330): Home Assistant, Jellyfin, media stack, Authelia         |
-| `remote`  | Public gateway: WireGuard hub, Caddy ingress, installed with disko               |
+| `remote`  | Public gateway: Nebula lighthouse, Caddy ingress, installed with disko           |
 
 `desktop` and `laptop` use home-manager; `server` and `remote` are deployed over SSH
 from a workstation.
 
 ## Network
 
-`remote` has the only public IP. Every other machine dials out to it over WireGuard
-(`10.10.0.0/24`), so the home server stays behind NAT with no port forwarded.
+`remote` has the only public IP. Every machine joins a Nebula mesh (`10.20.0.0/24`):
+`remote` is the lighthouse (it tells peers where to find each other) and a relay of last
+resort, but each pair of hosts gets its own end-to-end tunnel, direct on the LAN at home.
+The home server stays behind NAT with no port forwarded.
 
 ```mermaid
 flowchart LR
     internet(("Internet"))
 
     subgraph ovh["OVH"]
-        remote["<b>remote</b><br>10.10.0.1<br>Caddy :80/:443<br>WireGuard hub :51820"]
+        remote["<b>remote</b><br>10.20.0.1<br>Caddy :80/:443<br>Nebula lighthouse + relay :4242"]
     end
 
     subgraph home["Home LAN (NAT)"]
-        server["<b>server</b><br>10.10.0.3<br>Docker services"]
-        desktop["<b>desktop</b><br>10.10.0.2"]
+        server["<b>server</b><br>10.20.0.3<br>Docker services"]
+        desktop["<b>desktop</b><br>10.20.0.2"]
     end
 
-    laptop["<b>laptop</b><br>10.10.0.5<br>roaming"]
-    phone["<b>phone</b><br>10.10.0.4"]
+    laptop["<b>laptop</b><br>10.20.0.5<br>roaming"]
+    phone["<b>phone</b><br>10.20.0.4"]
 
     internet -- "HTTPS *.domain" --> remote
-    server -. "wg0" .-> remote
-    desktop -. "wg0" .-> remote
-    laptop -. "wg0" .-> remote
-    phone -. "wg0" .-> remote
+    server & desktop & laptop & phone -. "where is X?" .-> remote
+    desktop <== "direct (LAN)" ==> server
+    laptop <== "direct, or relayed as ciphertext" ==> desktop
+    remote == "edge relay" ==> server
 ```
 
 ## Request path
@@ -62,7 +64,7 @@ sequenceDiagram
     participant S as Service
 
     U->>E: HTTPS sonarr.domain
-    E->>C: reverse_proxy over WireGuard (SNI kept)
+    E->>C: reverse_proxy over Nebula (SNI kept)
     C->>A: forward_auth
     alt not logged in
         A-->>U: redirect to auth.domain (2FA)
@@ -81,7 +83,7 @@ internet through ProtonVPN.
 
 ```mermaid
 flowchart TB
-    wg["wg0 (from remote)"] --> caddy["Caddy"]
+    mesh["Nebula (from remote)"] --> caddy["Caddy"]
     lan["LAN"] --> caddy
 
     caddy --> authelia["Authelia"]
@@ -119,10 +121,11 @@ modules/home/     Home-manager modules (git, fish, neovim, tmux, ghostty, ...)
 config/           Dotfiles and service configs (nvim, tmux, docker-compose, Caddyfile)
 overlays/         Package overlays
 scripts/          Rebuild, dictation, backups, IPMI fan control
-vars.nix          Shared non-secret values (LAN/WireGuard IPs, ports, public keys)
+vars.nix          Shared non-secret values (LAN/Nebula IPs and groups, ports)
 private/          Personal values, sops-encrypted (see below)
 secrets/          sops-encrypted secrets for the server
-docs/             Architecture, WireGuard, secrets
+docs/             Architecture, Nebula, secrets
+nebula/           Nebula CA and host certificates (public)
 ```
 
 ## Secrets and personal values
@@ -179,7 +182,8 @@ To build it on your own machines:
 3. Write your own `private/vars.yaml` from `private/example/vars.json` and encrypt it
    (`sops -e -i private/vars.yaml`). Do the same for `secrets/server.yaml` if you use the
    server.
-4. Adjust `vars.nix` (IPs, WireGuard public keys) and the user name in the modules.
+4. Adjust `vars.nix` (IPs) and the user name in the modules, then create your Nebula CA
+   and certificates (`docs/nebula-setup.md`) in place of mine.
 
 ## CI
 

@@ -3,22 +3,6 @@
 {
   timezone = "Europe/Paris";
 
-  wireguard = {
-    remote = "10.10.0.1";
-    desktop = "10.10.0.2";
-    server = "10.10.0.3";
-    phone = "10.10.0.4";
-    laptop = "10.10.0.5";
-    listenPort = 51820;
-    publicKeys = {
-      remote = "ejj87LpGCf9mrplg7Cg7kiEqRz8Zf55Ub5X2IZh44Aw=";
-      desktop = "GXChVAAGz8hbAO4wV7MxjGL73NVnH0lfdIGBJ4tmfV4=";
-      server = "EWAOo1afS+rx6V1+Y/Tipv0xwn+X3miPQP6rjrkrC3I=";
-      phone = "LyCeczzBiWZ1N4p3xMkAgfnuWPrsgAZjLYRE7wDUTUQ=";
-      laptop = "oDk3DX0DqACRVpmhoBCj9zgxpowCgT9Df8i83orExRc=";
-    };
-  };
-
   # Nebula mesh (modules/nixos/nebula.nix). Groups are baked into each certificate by
   # scripts/nebula-cert.sh: changing them means signing the host again.
   nebula = {

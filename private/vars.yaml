@@ -1,7 +1,5 @@
 placeholder: ENC[AES256_GCM,data:AVgAUDY=,iv:V6CEhDx69OGQuMLNSlNDx9xDb/Kxv14B+W0551rspx0=,tag:feqvvnjMmdXcXYORcjJ+zA==,type:bool]
 domain: ENC[AES256_GCM,data:WJ/vITVypZiPNKoVIQ==,iv:Yni3jLUFrHYSjI97umZLIkRS3JCwpvFl8YIskvy/UB0=,tag:UYOdT7+FFdq99UO3K6dv5Q==,type:str]
-wireguard:
-    remoteEndpoint: ENC[AES256_GCM,data:xcYmo2pw/CL/VA0mtAM=,iv:ri2kjsy5Ym4Rddcni0imWJGtr/krNI3YXtVBM7rnq1Y=,tag:Oeu4thNW6AoWhUmXm9bnWA==,type:str]
 remote:
     mac: ENC[AES256_GCM,data:Zeeq7GC++UW1EAwseX7HlN0=,iv:3vnljSvfjUG5bhrGEHUV2HheGgdegZ6acrpxlpgJyr8=,tag:TS1zZLpasxHncMdUtz9XQQ==,type:str]
     ipv4: ENC[AES256_GCM,data:Tg0i+v0v/6EU4bgz1iWuMlQ=,iv:cWbzptZmKPdd+kyT9auTwu/GTEveepXm+VfqZkGLEWs=,tag:xXhg44ANvWgCBsbPizR2tg==,type:str]
@@ -52,7 +50,7 @@ sops:
             NLQkO7GcwC6ds2QoWoKHwBFrdWviqqoExIDRBm0oVomAwxxLXKaDCg==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1prl2cuslk7vj8jjp9yzu5xne9u85q4dya2ymazkcngjjnumz4ueqky3pge
-    lastmodified: "2026-11-18T19:11:45Z"
-    mac: ENC[AES256_GCM,data:Am/8zGjD3yFgOWjwmr90EM8w6SpgAP9DV9LZUrydavrXO5eRhpQkVQULW9zNKwUl6kODsyru7cWgfY+/d9LQcfPwkEElZfXuAgJ0hhetzzsDJWxseNiKAOlE6wxEN0pMVzsaQ0mXHayl1ZE0/nVz8HMci4WPBiNOfe1bU2aXRBo=,iv:MR08Af3AZIsCMlFYOFM8e2QaqURmK5gnXBbQzYP8Y/c=,tag:FV+tRKmNxxVktn0Km2sfjA==,type:str]
+    lastmodified: "2026-11-25T16:39:09Z"
+    mac: ENC[AES256_GCM,data:ext1p9SOkjDchJCW1jh60UDnYMsjZqdJglYsfQz+htap2vXfyXCBunyqJl2UNamn2UDe/K72bmwecM0JFTVB3UZIfbtfYDXWTQS39r4wQpqXW7faXT3RhbK2aWS5IL6lKasN+MIePWguiR7l/0fagfxBvZTXsyXPxD6HvQYzYrc=,iv:6B4wzeXRCeoa+sChy184FszloeJf8W7bYN6zCFJINrM=,tag:LQLlzexFnTo//pcSWC4QEg==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3

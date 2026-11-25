@@ -1,6 +1,6 @@
 # Nebula Setup
 
-Nebula replaces the WireGuard star. Every pair of hosts gets its own end-to-end tunnel:
+Nebula replaced the WireGuard star. Every pair of hosts gets its own end-to-end tunnel:
 `remote` is only the lighthouse (it tells peers where to find each other) and a relay
 of last resort, and it never sees cleartext. At home, hosts talk directly on the LAN.
 
@@ -74,7 +74,7 @@ warning). Then deploy: `rebuild`, `rebuild server`, `rebuild remote`.
 4. Enable the relay through `10.20.0.1` (advanced settings, or import a YAML config with
    `relay.relays: [10.20.0.1]`): on mobile networks, hole punching often fails.
 
-Android runs one VPN at a time: Nebula replaces the WireGuard app.
+Android runs one VPN at a time: remove the old WireGuard app.
 
 ## 4. Verify
 
@@ -90,13 +90,3 @@ At home, a peer should be reached on its `192.168.1.0/24` address, not the publi
 
 Host certificates expire with the CA (10 years). Changing a host's groups or IP in
 `vars.nebula` means signing it again (`sign`, same public key), then redeploying.
-
-## Migration status
-
-1. ~~Nebula alongside `wg0`~~: desktop, laptop, server and remote enrolled.
-2. ~~Move consumers to `10.20.0.x`~~: SSH aliases (`modules/home/ssh.nix`), dictation
-   (`hosts/laptop`), the edge relay (`modules/nixos/edge.nix`, `trusted_proxies` in the
-   server's Caddyfile), hostnames on remote.
-3. Enroll the phone, then remove `wg0` from every host (and Orca's `wg0` rule on the
-   desktop), move `vars.wireguard.remoteEndpoint` out of `vars.wireguard`, delete
-   `docs/wireguard-setup.md` and the WireGuard app.

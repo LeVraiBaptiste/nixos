@@ -1,4 +1,4 @@
-# OVH dedicated server — WireGuard hub, Caddy ingress (internet-facing)
+# OVH dedicated server — Nebula lighthouse and relay, Caddy ingress (internet-facing)
 {
   config,
   lib,
@@ -74,53 +74,6 @@
     dns = [ vars.remote.dns ];
   };
 
-  # IP forwarding — relay traffic between WireGuard peers
-  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
-
-  # WireGuard — key readable by systemd-networkd
-  systemd.tmpfiles.rules = [
-    "z /etc/wireguard/private.key 0640 root systemd-network -"
-  ];
-
-  # WireGuard — VPN hub (Desktop + Server + Phone + Laptop connect here)
-  systemd.network.netdevs."10-wg0" = {
-    netdevConfig = {
-      Name = "wg0";
-      Kind = "wireguard";
-    };
-    wireguardConfig = {
-      ListenPort = vars.wireguard.listenPort;
-      PrivateKeyFile = "/etc/wireguard/private.key";
-    };
-    wireguardPeers = [
-      {
-        # Desktop
-        PublicKey = vars.wireguard.publicKeys.desktop;
-        AllowedIPs = [ "${vars.wireguard.desktop}/32" ];
-      }
-      {
-        # Server
-        PublicKey = vars.wireguard.publicKeys.server;
-        AllowedIPs = [ "${vars.wireguard.server}/32" ];
-      }
-      {
-        # Phone (Android) — reaches Orca on the desktop
-        PublicKey = vars.wireguard.publicKeys.phone;
-        AllowedIPs = [ "${vars.wireguard.phone}/32" ];
-      }
-      {
-        # Laptop — roaming, reaches desktop/server from anywhere
-        PublicKey = vars.wireguard.publicKeys.laptop;
-        AllowedIPs = [ "${vars.wireguard.laptop}/32" ];
-      }
-    ];
-  };
-
-  systemd.network.networks."50-wg0" = {
-    matchConfig.Name = "wg0";
-    address = [ "${vars.wireguard.remote}/24" ];
-  };
-
   # SSH — key-only auth (internet-facing)
   services.openssh.settings = {
     PasswordAuthentication = false;
@@ -134,9 +87,6 @@
       22
       80
       443
-    ];
-    allowedUDPPorts = [
-      vars.wireguard.listenPort
     ];
   };
 
@@ -187,9 +137,6 @@
 
     # Terminal compatibility
     kitty.terminfo
-
-    # Networking
-    wireguard-tools
 
     # CLI tools
     fzf

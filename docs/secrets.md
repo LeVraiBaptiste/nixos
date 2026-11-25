@@ -1,7 +1,7 @@
 # Secrets (sops-nix)
 
 Secrets are encrypted with [sops](https://github.com/getsops/sops) + age in `secrets/*.yaml`
-and committed. Non-secret shared values (LAN/WireGuard IPs, ports, public keys) live in `vars.nix`.
+and committed. Non-secret shared values (LAN/Nebula IPs, ports, public keys) live in `vars.nix`.
 
 At activation, sops-nix decrypts them on the target host with its SSH host key into
 `/run/secrets/` (tmpfs). They never land in the Nix store. Templates rendered from them

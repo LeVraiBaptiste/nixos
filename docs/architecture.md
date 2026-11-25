@@ -2,17 +2,17 @@
 
 ## Overview
 
-Four NixOS hosts in one flake, joined by a WireGuard star centred on `remote`:
+Four NixOS hosts in one flake, joined by a Nebula mesh whose lighthouse is `remote`:
 
 | Host      | Where            | Role                                                        |
 |-----------|------------------|-------------------------------------------------------------|
-| `remote`  | OVH, public IP   | WireGuard hub, public ingress (native Caddy, Let's Encrypt) |
+| `remote`  | OVH, public IP   | Nebula lighthouse + relay, public ingress (native Caddy, Let's Encrypt) |
 | `server`  | Home LAN, NAT    | Dell T330, every self-hosted service (one docker-compose)   |
 | `desktop` | Home LAN, NAT    | Workstation, deploys the two machines above over SSH        |
-| `laptop`  | Anywhere         | Roaming workstation, reaches the others through the tunnel  |
+| `laptop`  | Anywhere         | Roaming workstation, reaches the others through the mesh    |
 
 Nothing at home is exposed: `remote` is the only machine with an open port on the
-internet, and the server is reached through a tunnel it opens itself.
+internet, and the server is reached through tunnels it opens itself.
 
 ## Network
 
@@ -21,33 +21,35 @@ flowchart LR
     internet(("Internet"))
 
     subgraph ovh["OVH"]
-        remote["<b>remote</b><br>10.10.0.1<br>Caddy :80/:443<br>WireGuard :51820<br>ip_forward=1"]
+        remote["<b>remote</b><br>10.20.0.1<br>Caddy :80/:443<br>Nebula lighthouse + relay :4242"]
     end
 
     subgraph home["Home LAN (NAT)"]
-        server["<b>server</b><br>10.10.0.3"]
-        desktop["<b>desktop</b><br>10.10.0.2"]
+        server["<b>server</b><br>10.20.0.3<br>Docker services"]
+        desktop["<b>desktop</b><br>10.20.0.2"]
     end
 
-    laptop["<b>laptop</b><br>10.10.0.5"]
-    phone["<b>phone</b><br>10.10.0.4"]
+    laptop["<b>laptop</b><br>10.20.0.5<br>roaming"]
+    phone["<b>phone</b><br>10.20.0.4"]
 
     internet -- "HTTPS *.domain" --> remote
-    server -. "wg0" .-> remote
-    desktop -. "wg0" .-> remote
-    laptop -. "wg0" .-> remote
-    phone -. "wg0" .-> remote
+    server & desktop & laptop & phone -. "where is X?" .-> remote
+    desktop <== "direct (LAN)" ==> server
+    laptop <== "direct, or relayed as ciphertext" ==> desktop
+    remote == "edge relay" ==> server
 ```
 
-- `remote` runs WireGuard through systemd-networkd, with one peer per host (`/32`
-  allowed IPs) and IP forwarding, so peers reach each other through it.
-- Every other host is a client with `persistentKeepalive = 25` (they are all behind NAT)
-  and a split tunnel: only `10.10.0.0/24` goes through `wg0`.
-- On `server`, `wg0` is a trusted firewall interface. On `desktop`, only Orca's port
-  (`6768`) is opened on `wg0`, for the phone.
+- Every pair of hosts gets its own end-to-end tunnel. `remote` is the lighthouse (address
+  book) and a relay of last resort; it holds no CA key and only ever forwards ciphertext.
+- Every host listens on UDP `4242`, so LAN peers reach each other directly
+  (`preferred_ranges` = the home LAN); away from home, hole punching, else the relay.
+- Access control is Nebula's firewall, by certificate group (`vars.nebula.hosts`): each
+  host lists what it accepts in `homelab.nebula.inbound` (SSH and dictation for
+  workstations, the server's 443 for the edge, Orca on the desktop for the phone). The
+  `nebula.homelab` interface is trusted by iptables.
 
-Tunnel IPs, the listen port and public keys live in `vars.nix`. Key generation and the
-phone setup are in [wireguard-setup.md](wireguard-setup.md).
+IPs and groups live in `vars.nebula`; certificates in `nebula/`. The CA, enrolling a host
+and the phone setup are in [nebula-setup.md](nebula-setup.md).
 
 ## Ingress
 
@@ -55,10 +57,10 @@ There are two Caddy instances:
 
 - **Edge** (`remote`, `modules/nixos/edge.nix`): native NixOS Caddy, owns 80/443 and gets
   real certificates. It declares one virtual host per server subdomain and relays it to
-  `https://10.10.0.3`, keeping the original `Host` and SNI. A catch-all on `:80`
+  `https://10.20.0.3` over Nebula, keeping the original `Host` and SNI. A catch-all on `:80`
   aborts requests for undeclared hosts; on 443 they fail the TLS handshake.
 - **Server** (`config/server/Caddyfile`, in docker-compose): `tls internal`, routes by
-  host to `localhost:<port>`, and trusts `X-Forwarded-*` only from `10.10.0.1`. The edge
+  host to `localhost:<port>`, and trusts `X-Forwarded-*` only from `10.20.0.1`. The edge
   skips verification of its internal certificate.
 
 ```mermaid
@@ -71,7 +73,7 @@ sequenceDiagram
     participant S as Service
 
     U->>E: HTTPS sonarr.domain
-    E->>C: reverse_proxy https://10.10.0.3 over wg0 (SNI kept)
+    E->>C: reverse_proxy https://10.20.0.3 over Nebula (SNI kept)
     C->>A: forward_auth /api/authz/forward-auth
     alt not logged in
         A-->>U: redirect to auth.domain (password + 2FA)
@@ -103,7 +105,7 @@ block in the server's Caddyfile. Apps hosted on `remote` itself just add their o
 
 ```mermaid
 flowchart TB
-    wg["wg0 (from remote)"] --> caddy["Caddy"]
+    mesh["Nebula (from remote)"] --> caddy["Caddy"]
     lan["LAN"] --> caddy
 
     caddy --> authelia["Authelia"]
@@ -207,4 +209,4 @@ The directories are created by `systemd.tmpfiles` in `hosts/server/default.nix`.
 | HA Container over HA OS / Supervised | Supervised conflicts with NixOS; add-ons are just more containers |
 | sops-nix for secrets | Encrypted in the public repo, decrypted on the host with its SSH key, never in the store |
 | Separate repo for HA config | Different lifecycle; keeps auto-commits out of this repo |
-| WireGuard over OpenVPN | In-kernel, simpler, faster |
+| Nebula mesh over a WireGuard star | Direct tunnels between hosts (LAN at home), the public relay never sees cleartext, access by certificate group |
