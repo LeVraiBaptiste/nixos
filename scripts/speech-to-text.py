@@ -451,6 +451,22 @@ def preload_ollama_model():
         debug_log(f"Ollama model preload failed (non-fatal): {e}")
 
 
+def unload_ollama_model():
+    """Free the model preloaded at recording start when llm_cleanup did not run
+    (no speech, recording too short, error), instead of holding VRAM for 5 min."""
+    _, ollama_url, _ = resolve_servers()
+    try:
+        urlopen(Request(
+            ollama_url,
+            data=json.dumps({"model": OLLAMA_MODEL, "keep_alive": 0}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        ), timeout=5)
+        debug_log("Ollama model unloaded")
+    except Exception as e:
+        debug_log(f"Ollama unload failed (non-fatal): {e}")
+
+
 def llm_cleanup(text):
     """Pass text through Ollama for cleanup. Falls back to raw text on failure."""
     _, ollama_url, _ = resolve_servers()
@@ -463,6 +479,9 @@ def llm_cleanup(text):
             "prompt": f"{system_prompt}\n\nTranscription:\n{text}",
             "stream": False,
             "think": False,
+            # Unload the model right after answering: it shares the 8 GB of VRAM
+            # with the desktop, and a full VRAM corrupts rendering (Orca on the G9)
+            "keep_alive": 0,
             # Low temperature: a faithful rewrite, not a creative one
             "options": {"temperature": 0.2},
         }).encode("utf-8")
@@ -712,6 +731,9 @@ def stop_recording():
         show_notification(f"Processing failed: {e}", "critical")
         return False
     finally:
+        # llm_cleanup already unloads on success; this covers the early exits
+        if mode == "llm":
+            unload_ollama_model()
         # Always clean up segment files
         for seg in segment_files:
             if seg != AUDIO_FILE and os.path.exists(seg):
